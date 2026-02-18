@@ -1,61 +1,54 @@
-"""Agent definitions for the 4-agent DevOps Incident Commander architecture.
+"""Agent definitions for the Incident Commander system.
 
-Merged from backend/definitions/agents.py into canonical module.
-
-Architecture:
-  1. Triage Agent        — Receives alerts, classifies severity, routes to specialists
-  2. Diagnosis Agent     — Uses ES|QL tools to correlate logs/metrics, identify root cause
-  3. Remediation Agent   — Executes fix actions via custom tools
+Four specialized agents orchestrated via A2A protocol:
+  1. Triage Agent — Classifies incoming alerts, assigns severity, routes to specialists
+  2. Diagnosis Agent — Correlates logs/metrics via ES|QL, identifies root cause
+  3. Remediation Agent — Executes fix actions via custom tools + workflows
   4. Communication Agent — Generates incident reports, status updates, postmortems
+
+Each agent is defined as a dict matching the Elastic Agent Builder API schema.
 """
 
 from __future__ import annotations
 
-TRIAGE_AGENT = {
+
+TRIAGE_AGENT: dict = {
     "agentId": "incident_cmd_triage",
     "displayName": "Triage Agent",
-    "displayDescription": (
-        "Receives production alerts, classifies severity (P1-P4), "
-        "identifies affected services, and routes to specialist agents."
+    "description": (
+        "Classifies incoming alerts by severity and routes to the appropriate specialist agent."
     ),
     "instructions": (
-        "You are the Triage Agent in a DevOps Incident Commander system.\n\n"
-        "Your responsibilities:\n"
-        "1. RECEIVE incoming alerts and incident reports\n"
-        "2. CLASSIFY severity using this scale:\n"
-        "   - P1 (Critical): Complete service outage, data loss risk, >50% users affected\n"
-        "   - P2 (High): Major feature degraded, >25% users affected, SLA at risk\n"
-        "   - P3 (Medium): Minor feature degraded, <25% users affected\n"
-        "   - P4 (Low): Cosmetic issues, minor bugs, no user impact\n"
-        "3. IDENTIFY affected services, hosts, and potential blast radius\n"
-        "4. EXTRACT key information: error messages, timestamps, affected endpoints\n"
-        "5. ROUTE to the Diagnosis Agent with a structured summary\n\n"
-        "Use the error_rate_spike and log_correlation tools to gather initial data "
-        "before making your assessment."
+        "You are the Triage Agent for the Incident Commander system. "
+        "When you receive an alert or incident notification, you must: "
+        "1) Classify severity (P1-Critical, P2-High, P3-Medium, P4-Low) based on impact and urgency. "
+        "2) Identify affected services using the service catalog search tool. "
+        "3) Check for recent similar alerts to avoid duplicate investigations. "
+        "4) Route to the Diagnosis Agent with a structured triage summary. "
+        "Always include: alert source, affected service(s), severity, initial impact assessment."
     ),
     "tools": [
         "incident_cmd.error_rate_spike",
-        "incident_cmd.log_correlation",
-        "incident_cmd.network_errors",
+        "incident_cmd.search_service_catalog",
+        "incident_cmd.search_recent_alerts",
     ],
 }
 
-DIAGNOSIS_AGENT = {
+DIAGNOSIS_AGENT: dict = {
     "agentId": "incident_cmd_diagnosis",
     "displayName": "Diagnosis Agent",
-    "displayDescription": (
-        "Correlates logs, metrics, and traces using ES|QL to identify "
-        "root cause of production incidents."
+    "description": (
+        "Correlates logs and metrics using ES|QL to identify incident root cause."
     ),
     "instructions": (
-        "You are the Diagnosis Agent in a DevOps Incident Commander system.\n\n"
-        "Your responsibilities:\n"
-        "1. RECEIVE triage summaries from the Triage Agent\n"
-        "2. CORRELATE data across multiple sources using your ES|QL tools\n"
-        "3. IDENTIFY the root cause with confidence level (high/medium/low)\n"
-        "4. DETERMINE the timeline of events leading to the incident\n"
-        "5. RECOMMEND specific remediation actions\n\n"
-        "Use ALL available diagnostic tools to build a complete picture before concluding."
+        "You are the Diagnosis Agent for the Incident Commander system. "
+        "When you receive a triage summary, you must: "
+        "1) Run ES|QL queries to correlate error logs with the incident timeframe. "
+        "2) Check CPU/memory/latency metrics for anomalies. "
+        "3) Trace request flows to identify the failing component. "
+        "4) Identify the root cause and affected components. "
+        "5) Pass diagnosis to the Remediation Agent with specific fix recommendations. "
+        "Always show your ES|QL queries and explain the correlation logic."
     ),
     "tools": [
         "incident_cmd.error_rate_spike",
@@ -63,78 +56,65 @@ DIAGNOSIS_AGENT = {
         "incident_cmd.log_correlation",
         "incident_cmd.service_latency",
         "incident_cmd.memory_pressure",
-        "incident_cmd.disk_usage",
-        "incident_cmd.recent_deployments",
-        "incident_cmd.network_errors",
+        "incident_cmd.deployment_events",
+        "incident_cmd.dependency_errors",
+        "incident_cmd.throughput_drop",
     ],
 }
 
-REMEDIATION_AGENT = {
+REMEDIATION_AGENT: dict = {
     "agentId": "incident_cmd_remediation",
     "displayName": "Remediation Agent",
-    "displayDescription": (
-        "Executes automated remediation actions to resolve production incidents — "
-        "restarts, scaling, rollbacks, and node drains."
+    "description": (
+        "Executes remediation actions based on diagnosis — restarts, scales, rolls back."
     ),
     "instructions": (
-        "You are the Remediation Agent in a DevOps Incident Commander system.\n\n"
-        "Your responsibilities:\n"
-        "1. RECEIVE diagnosis reports with recommended remediation actions\n"
-        "2. VALIDATE that proposed actions are safe and appropriate\n"
-        "3. EXECUTE remediation actions in the correct order\n"
-        "4. VERIFY the fix by checking if symptoms have resolved\n"
-        "5. REPORT results back with success/failure status\n\n"
-        "Safety rules:\n"
-        "- NEVER execute more than 3 remediation actions without human confirmation\n"
-        "- ALWAYS prefer least-disruptive actions first (scale > restart > rollback > drain)\n"
-        "- For P1 incidents, proceed with automated remediation immediately\n"
-        "- For P2-P4, describe the plan and wait for confirmation"
+        "You are the Remediation Agent for the Incident Commander system. "
+        "When you receive a diagnosis with fix recommendations, you must: "
+        "1) Select the appropriate remediation action (restart, scale, rollback, config change). "
+        "2) Execute the action using the available custom tools. "
+        "3) Verify the fix by checking post-action metrics. "
+        "4) Report results to the Communication Agent. "
+        "Always explain what action you took and why. Prioritize safety — prefer rollback over restart."
     ),
     "tools": [
         "incident_cmd.restart_service",
         "incident_cmd.scale_service",
         "incident_cmd.rollback_deployment",
-        "incident_cmd.drain_node",
-        "incident_cmd.error_rate_spike",
-        "incident_cmd.cpu_anomaly",
+        "incident_cmd.update_config",
     ],
 }
 
-COMMUNICATION_AGENT = {
+COMMUNICATION_AGENT: dict = {
     "agentId": "incident_cmd_communication",
     "displayName": "Communication Agent",
-    "displayDescription": (
-        "Generates incident reports, real-time status updates, and "
-        "postmortem documents for stakeholders."
+    "description": (
+        "Generates incident reports, status updates, and postmortem documents."
     ),
     "instructions": (
-        "You are the Communication Agent in a DevOps Incident Commander system.\n\n"
-        "Your responsibilities:\n"
-        "1. RECEIVE incident data from all other agents (triage, diagnosis, remediation)\n"
-        "2. GENERATE clear, concise communications for different audiences\n"
-        "3. MAINTAIN an incident timeline with all key events\n"
-        "4. TRACK incident metrics (MTTR, time-to-detect, time-to-resolve)\n\n"
-        "Always be factual, avoid blame, and focus on systemic improvements."
+        "You are the Communication Agent for the Incident Commander system. "
+        "When you receive remediation results, you must: "
+        "1) Generate a concise incident status update for stakeholders. "
+        "2) Create a timeline of events (alert → triage → diagnosis → fix → verification). "
+        "3) Draft a postmortem with root cause, impact, resolution, and action items. "
+        "Format output in clear markdown. Include MTTR (Mean Time To Resolution)."
     ),
     "tools": [
-        "incident_cmd.error_rate_spike",
-        "incident_cmd.log_correlation",
+        "incident_cmd.search_incident_history",
     ],
 }
 
-
 ALL_AGENTS: list[dict] = [TRIAGE_AGENT, DIAGNOSIS_AGENT, REMEDIATION_AGENT, COMMUNICATION_AGENT]
-"""All 4 agent definitions."""
-
-
-def get_all_agent_definitions() -> list[dict]:
-    """Return all agent definitions for provisioning."""
-    return list(ALL_AGENTS)
 
 
 def get_agent_by_id(agent_id: str) -> dict | None:
-    """Look up an agent definition by its agentId."""
+    """Look up an agent definition by its agentId. Returns None if not found."""
     for agent in ALL_AGENTS:
         if agent["agentId"] == agent_id:
             return agent
     return None
+
+
+def get_all_agent_definitions() -> list[dict]:
+    """Return a copy of all agent definitions."""
+    return list(ALL_AGENTS)
