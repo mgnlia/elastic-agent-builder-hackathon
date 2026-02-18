@@ -1,7 +1,6 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.egg-info/
 dist/
 build/
@@ -11,23 +10,18 @@ build/
 .venv/
 venv/
 
-# Environment variables
-.env
-
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
+
+# Environment
+.env
 
 # OS
 .DS_Store
 Thumbs.db
 
 # uv
-.python-version
-
-# Node (frontend)
-node_modules/
-.next/
-out/
+uv.lock

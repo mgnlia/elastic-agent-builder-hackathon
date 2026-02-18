@@ -1,24 +1,37 @@
 """Tests for configuration module."""
 
-from src.config import Settings
+from incident_commander.config import ElasticConfig
 
 
-def test_settings_defaults():
-    """Settings should have safe defaults when env vars are missing."""
-    s = Settings(
-        _env_file=None,  # type: ignore[call-arg]
+def test_config_defaults():
+    cfg = ElasticConfig(cloud_id="", api_key="", kibana_url="", kibana_api_key="")
+    assert cfg.cloud_id == ""
+    assert cfg.api_key == ""
+
+
+def test_config_validate_all_missing():
+    cfg = ElasticConfig(cloud_id="", api_key="", kibana_url="", kibana_api_key="")
+    missing = cfg.validate()
+    assert len(missing) == 4
+    assert "ELASTIC_CLOUD_ID" in missing
+    assert "ELASTIC_API_KEY" in missing
+
+
+def test_config_validate_all_present():
+    cfg = ElasticConfig(
+        cloud_id="test:cloud:id",
+        api_key="test-key",
+        kibana_url="https://test.kb.elastic.co",
+        kibana_api_key="test-kb-key",
     )
-    assert s.elastic_cloud_id == ""
-    assert s.elastic_api_key == ""
-    assert s.kibana_url == ""
+    assert cfg.validate() == []
 
 
-def test_kibana_headers():
-    """Headers should include auth and xsrf."""
-    s = Settings(
-        _env_file=None,  # type: ignore[call-arg]
-        kibana_api_key="test-key-123",
+def test_agent_builder_base_url():
+    cfg = ElasticConfig(
+        cloud_id="x",
+        api_key="x",
+        kibana_url="https://test.kb.elastic.co",
+        kibana_api_key="x",
     )
-    headers = s.kibana_headers
-    assert headers["kbn-xsrf"] == "true"
-    assert "test-key-123" in headers["Authorization"]
+    assert cfg.agent_builder_base_url == "https://test.kb.elastic.co/api/agent_builder"

@@ -62,6 +62,9 @@ uv run incident-commander agents
 
 # List tools
 uv run incident-commander tools
+
+# Run tests
+uv run pytest tests/ -v
 ```
 
 ## Project Structure
@@ -74,7 +77,12 @@ uv run incident-commander tools
 │   ├── config.py            # Configuration management
 │   ├── elastic_client.py    # Agent Builder API client
 │   └── tools.py             # Tool definitions (ES|QL, Search, Workflows)
-├── frontend/                # Next.js incident dashboard
+├── tests/
+│   ├── test_agents.py       # Agent definition tests
+│   ├── test_tools.py        # Tool definition tests
+│   ├── test_config.py       # Configuration tests
+│   └── test_cli.py          # CLI command tests
+├── .github/workflows/ci.yml # CI: lint + test + typecheck
 ├── pyproject.toml           # Python project config (uv)
 ├── LICENSE                  # Apache 2.0
 └── README.md
