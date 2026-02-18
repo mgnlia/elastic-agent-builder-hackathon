@@ -1,210 +1,235 @@
 "use client";
 
-import type { MetricsData, Incident } from "@/lib/types";
-import {
-  Clock,
-  TrendingDown,
-  BarChart3,
-  MessageSquare,
-  Database,
-  Zap,
-  ArrowDown,
-  CheckCircle2,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { DemoPhase } from "@/lib/types";
+import { METRICS } from "@/lib/demo-data";
 
-interface MetricCardProps {
-  icon: React.ReactNode;
+interface MetricsDashboardProps {
+  phase: DemoPhase;
+  elapsedTime: number;
+}
+
+function MetricBar({
+  label,
+  manual,
+  automated,
+  unit,
+  index,
+  showAutomated,
+}: {
   label: string;
-  value: string | number;
-  subtext?: string;
-  highlight?: boolean;
-  color?: string;
-}
+  manual: number;
+  automated: number;
+  unit: string;
+  index: number;
+  showAutomated: boolean;
+}) {
+  const reduction = ((manual - automated) / manual) * 100;
+  const manualWidth = 100;
+  const autoWidth = (automated / manual) * 100;
 
-function MetricCard({ icon, label, value, subtext, highlight, color }: MetricCardProps) {
   return (
-    <div
-      className={`rounded-xl border p-4 transition-all ${
-        highlight
-          ? "bg-elastic-accent/10 border-elastic-accent/30"
-          : "bg-elastic-card border-elastic-border"
-      }`}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="space-y-2"
     >
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`${color || "text-elastic-muted"}`}>{icon}</div>
-        <span className="text-xs text-elastic-muted uppercase tracking-wider font-medium">
-          {label}
-        </span>
-      </div>
-      <p
-        className={`text-2xl font-bold ${
-          highlight ? "text-elastic-accent" : "text-elastic-text"
-        }`}
-      >
-        {value}
-      </p>
-      {subtext && (
-        <p className="text-[10px] text-elastic-muted mt-1">{subtext}</p>
-      )}
-    </div>
-  );
-}
-
-interface MTTRComparisonProps {
-  before: number;
-  after: number;
-  reduction: number;
-  isResolved: boolean;
-}
-
-function MTTRComparison({ before, after, reduction, isResolved }: MTTRComparisonProps) {
-  const afterWidth = Math.max((after / before) * 100, 4);
-
-  return (
-    <div className="rounded-xl border border-elastic-border bg-elastic-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-elastic-muted uppercase tracking-wider flex items-center gap-1.5">
-          <TrendingDown className="w-3.5 h-3.5 text-elastic-green" />
-          MTTR Comparison
-        </h3>
-        {isResolved && (
-          <span className="badge bg-elastic-green/20 text-elastic-green border-elastic-green/30 flex items-center gap-1">
-            <ArrowDown className="w-3 h-3" />
-            {reduction.toFixed(1)}% reduction
-          </span>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-gray-300 font-medium">{label}</span>
+        {showAutomated && (
+          <motion.span
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-[10px] font-mono text-elastic-teal"
+          >
+            -{reduction.toFixed(1)}%
+          </motion.span>
         )}
       </div>
 
-      <div className="space-y-3">
-        {/* Before */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-elastic-muted">Manual (avg)</span>
-            <span className="text-sm font-semibold text-elastic-red">
-              {before} min
-            </span>
+      {/* Manual bar */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-gray-500 w-16">Manual</span>
+          <div className="flex-1 h-3 rounded-full bg-surface-3 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-red-500/60 to-red-400/60"
+              initial={{ width: "0%" }}
+              animate={{ width: `${manualWidth}%` }}
+              transition={{ duration: 0.8, delay: index * 0.1 }}
+            />
           </div>
-          <div className="w-full h-6 bg-elastic-darker rounded-lg overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-elastic-red/60 to-elastic-red/40 rounded-lg flex items-center justify-end pr-2"
-              style={{ width: "100%" }}
-            >
-              <span className="text-[10px] font-bold text-elastic-red">
-                45:00
-              </span>
-            </div>
-          </div>
+          <span className="text-[10px] font-mono text-gray-400 w-14 text-right">
+            {manual} {unit}
+          </span>
         </div>
 
-        {/* After */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-elastic-muted">
-              Incident Commander
-            </span>
-            <span className="text-sm font-semibold text-elastic-green">
-              {isResolved ? `${after.toFixed(1)} min` : "—"}
-            </span>
-          </div>
-          <div className="w-full h-6 bg-elastic-darker rounded-lg overflow-hidden">
-            {isResolved && (
-              <div
-                className="h-full bg-gradient-to-r from-elastic-green/60 to-elastic-green/40 rounded-lg flex items-center justify-end pr-2 transition-all duration-1000"
-                style={{ width: `${afterWidth}%` }}
-              >
-                <span className="text-[10px] font-bold text-elastic-green">
-                  1:55
-                </span>
-              </div>
+        {/* Automated bar */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-gray-500 w-16">Auto</span>
+          <div className="flex-1 h-3 rounded-full bg-surface-3 overflow-hidden">
+            {showAutomated && (
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-elastic-teal/80 to-elastic-teal/60"
+                initial={{ width: "0%" }}
+                animate={{ width: `${Math.max(autoWidth, 2)}%` }}
+                transition={{ duration: 0.6, delay: index * 0.1 + 0.3 }}
+              />
             )}
           </div>
+          <span className="text-[10px] font-mono text-elastic-teal w-14 text-right">
+            {showAutomated
+              ? `${automated < 1 ? (automated * 60).toFixed(0) + "s" : automated.toFixed(1) + " " + unit}`
+              : "—"}
+          </span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-interface MetricsDashboardProps {
-  metrics: MetricsData;
-  incident: Incident;
-  isResolved: boolean;
-}
-
-export function MetricsDashboard({
-  metrics,
-  incident,
-  isResolved,
+export default function MetricsDashboard({
+  phase,
+  elapsedTime,
 }: MetricsDashboardProps) {
+  const showAutomated = phase === "resolved";
+  const isActive = phase !== "idle";
+
   return (
-    <div className="card">
-      <div className="card-header mb-4">
-        <h2 className="card-title flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-elastic-accent" />
-          Performance Metrics
+    <div className="bg-surface-1 border border-surface-3 rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-sm font-semibold text-white tracking-wide uppercase">
+          MTTR Metrics
         </h2>
+        <span className="text-xs font-mono text-gray-500">
+          Mean Time to Resolution
+        </span>
       </div>
 
-      {/* MTTR Comparison */}
-      <MTTRComparison
-        before={metrics.mttrBefore}
-        after={metrics.mttrAfter}
-        reduction={metrics.mttrReduction}
-        isResolved={isResolved}
-      />
+      {/* Hero Metric */}
+      <div className="relative mb-6 p-5 rounded-xl bg-surface-2 border border-surface-4 overflow-hidden">
+        {showAutomated && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-elastic-teal/5 to-transparent"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          />
+        )}
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-3 gap-3 mt-4">
-        <MetricCard
-          icon={<Clock className="w-4 h-4" />}
-          label="Diagnosis"
-          value={isResolved ? `${metrics.avgDiagnosisTime}s` : "—"}
-          subtext="Root cause identification"
-          color="text-elastic-accent"
-        />
-        <MetricCard
-          icon={<Zap className="w-4 h-4" />}
-          label="Remediation"
-          value={isResolved ? `${metrics.avgRemediationTime}s` : "—"}
-          subtext="Fix execution time"
-          color="text-elastic-orange"
-        />
-        <MetricCard
-          icon={<CheckCircle2 className="w-4 h-4" />}
-          label="Status"
-          value={isResolved ? "Resolved" : "Active"}
-          subtext={
-            isResolved
-              ? `${incident.id} closed`
-              : `${incident.id} in progress`
-          }
-          highlight={isResolved}
-          color={isResolved ? "text-elastic-green" : "text-elastic-red"}
-        />
+        <div className="relative flex items-end justify-between">
+          <div>
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-1">
+              {showAutomated ? "Automated MTTR" : "Manual MTTR (Industry Avg)"}
+            </p>
+            <div className="flex items-baseline gap-2">
+              {showAutomated ? (
+                <>
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-4xl font-bold text-elastic-teal font-mono"
+                  >
+                    1:55
+                  </motion.span>
+                  <span className="text-sm text-gray-400">min</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-bold text-red-400 font-mono">
+                    45:00
+                  </span>
+                  <span className="text-sm text-gray-400">min</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {showAutomated && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-right"
+            >
+              <div className="text-3xl font-bold text-elastic-teal font-mono">
+                95.7%
+              </div>
+              <div className="text-xs text-gray-400">reduction</div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Comparison visualization */}
+        {showAutomated && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-4 flex items-center gap-3"
+          >
+            <div className="flex-1">
+              <div className="h-2 rounded-full bg-red-500/30 w-full" />
+              <span className="text-[9px] font-mono text-gray-500 mt-1 block">
+                45 min manual
+              </span>
+            </div>
+            <span className="text-gray-600 text-xs">→</span>
+            <div className="w-[4.3%] min-w-[12px]">
+              <div className="h-2 rounded-full bg-elastic-teal" />
+              <span className="text-[9px] font-mono text-elastic-teal mt-1 block whitespace-nowrap">
+                1m 55s
+              </span>
+            </div>
+          </motion.div>
+        )}
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mt-3">
-        <MetricCard
-          icon={<MessageSquare className="w-4 h-4" />}
-          label="A2A Messages"
-          value={incident.messages.length}
-          subtext="Inter-agent communication"
-          color="text-elastic-blue"
-        />
-        <MetricCard
-          icon={<Database className="w-4 h-4" />}
-          label="ES|QL Queries"
-          value={metrics.esqlQueriesRun}
-          subtext="Log & metric correlation"
-          color="text-elastic-purple"
-        />
-        <MetricCard
-          icon={<Zap className="w-4 h-4" />}
-          label="Actions"
-          value={metrics.automatedActions}
-          subtext="Automated remediations"
-          color="text-elastic-yellow"
-        />
+      {/* Breakdown */}
+      <div className="space-y-4">
+        {METRICS.map((metric, i) => (
+          <MetricBar
+            key={metric.label}
+            label={metric.label}
+            manual={metric.manual}
+            automated={metric.automated}
+            unit={metric.unit}
+            index={i}
+            showAutomated={showAutomated}
+          />
+        ))}
       </div>
+
+      {/* Agent Summary */}
+      {isActive && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-5 pt-4 border-t border-surface-4"
+        >
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { icon: "🔍", label: "Triage", time: "14s", color: "#F04E98" },
+              { icon: "🔬", label: "Diagnosis", time: "30s", color: "#0077CC" },
+              { icon: "🔧", label: "Remediation", time: "30s", color: "#00BFB3" },
+              { icon: "📢", label: "Comms", time: "20s", color: "#FEC514" },
+            ].map((agent) => (
+              <div
+                key={agent.label}
+                className="text-center p-2 rounded-lg bg-surface-2"
+              >
+                <span className="text-lg">{agent.icon}</span>
+                <div
+                  className="text-[10px] font-mono mt-1"
+                  style={{ color: agent.color }}
+                >
+                  {agent.time}
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

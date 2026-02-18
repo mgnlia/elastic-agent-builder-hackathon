@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Incident Commander — Elastic Agent Builder",
+  title: "Elastic Incident Commander — Multi-Agent A2A Dashboard",
   description:
-    "Multi-agent DevOps incident response dashboard. 4 AI agents orchestrated via A2A protocol to reduce MTTR from 45min to 5min.",
+    "Real-time incident response dashboard powered by 4 AI agents using Elastic Agent Builder and A2A Protocol. Reduces MTTR from 45 minutes to under 2 minutes.",
+  openGraph: {
+    title: "Elastic Incident Commander",
+    description: "Multi-Agent A2A Incident Response Dashboard",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -14,7 +19,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-gray-950 text-gray-100 antialiased">{children}</body>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="bg-surface-0 text-gray-100 antialiased noise">
+        {children}
+      </body>
     </html>
   );
 }

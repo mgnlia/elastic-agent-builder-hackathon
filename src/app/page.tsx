@@ -1,67 +1,107 @@
-import { Header } from "@/components/Header";
-import { MetricsGrid } from "@/components/MetricsGrid";
-import { IncidentTimeline } from "@/components/IncidentTimeline";
-import { AgentPanel } from "@/components/AgentPanel";
-import { MTTRComparison } from "@/components/MTTRComparison";
-import { RecentIncidents } from "@/components/RecentIncidents";
+"use client";
+
+import { useDemo } from "@/hooks/useDemo";
+import Header from "@/components/Header";
+import DemoControls from "@/components/DemoControls";
+import IncidentTimeline from "@/components/IncidentTimeline";
+import AgentPanel from "@/components/AgentPanel";
+import MetricsDashboard from "@/components/MetricsDashboard";
+import { motion } from "framer-motion";
 
 export default function Home() {
+  const { state, play, pause, reset, setSpeed } = useDemo();
+
   return (
-    <div className="min-h-screen">
-      <Header />
+    <div className="min-h-screen bg-surface-0 bg-grid flex flex-col">
+      <Header phase={state.phase} elapsedTime={state.elapsedTime} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Metrics */}
-        <MetricsGrid />
+      <main className="flex-1 max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-5">
+        {/* Demo Controls */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-5"
+        >
+          <DemoControls
+            phase={state.phase}
+            isPlaying={state.isPlaying}
+            speed={state.speed}
+            onPlay={play}
+            onPause={pause}
+            onReset={reset}
+            onSetSpeed={setSpeed}
+          />
+        </motion.div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Timeline — 2 cols */}
-          <div className="lg:col-span-2 space-y-6">
-            <IncidentTimeline />
-            <MTTRComparison />
-          </div>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Left: Timeline */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="lg:col-span-4 lg:h-[calc(100vh-280px)]"
+          >
+            <IncidentTimeline
+              events={state.events}
+              currentPhase={state.phase}
+            />
+          </motion.div>
 
-          {/* Sidebar — 1 col */}
-          <div className="space-y-6">
-            <AgentPanel />
-            <RecentIncidents />
+          {/* Center: Agent Panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="lg:col-span-5 lg:h-[calc(100vh-280px)]"
+          >
+            <AgentPanel
+              activeAgent={state.activeAgent}
+              messages={state.messages}
+              phase={state.phase}
+            />
+          </motion.div>
+
+          {/* Right: Metrics */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="lg:col-span-3"
+          >
+            <MetricsDashboard
+              phase={state.phase}
+              elapsedTime={state.elapsedTime}
+            />
+          </motion.div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-surface-3 bg-surface-1/50 backdrop-blur-sm">
+        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
+          <p className="text-[11px] font-mono text-gray-600">
+            Built for the{" "}
+            <a
+              href="https://elasticsearch-agent-builder-hackathon.devpost.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-elastic-teal/60 hover:text-elastic-teal transition-colors"
+            >
+              Elastic Agent Builder Hackathon
+            </a>
+          </p>
+          <div className="flex items-center gap-4">
+            <span className="text-[11px] font-mono text-gray-600">
+              Elastic Agent Builder + A2A Protocol
+            </span>
+            <span className="text-[11px] font-mono text-gray-600">
+              Next.js 14 • TypeScript • Tailwind CSS
+            </span>
           </div>
         </div>
-
-        {/* Footer */}
-        <footer className="border-t border-gray-800 pt-6 pb-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-center sm:text-left">
-              <p className="text-sm text-gray-500">
-                Built for the{" "}
-                <a
-                  href="https://elasticsearch-agent-builder-hackathon.devpost.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-elastic-blue hover:underline"
-                >
-                  Elasticsearch Agent Builder Hackathon
-                </a>
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                4 AI agents × 12 tools × A2A protocol — reducing MTTR from 45min to 5min
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://github.com/mgnlia/elastic-agent-builder-hackathon"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                GitHub
-              </a>
-              <span className="text-xs text-gray-700">MIT License</span>
-            </div>
-          </div>
-        </footer>
-      </main>
+      </footer>
     </div>
   );
 }

@@ -10,23 +10,52 @@ const config: Config = {
     extend: {
       colors: {
         elastic: {
+          teal: "#00BFB3",
           blue: "#0077CC",
-          dark: "#1B1F23",
-          green: "#00BFB3",
+          pink: "#F04E98",
           yellow: "#FEC514",
-          red: "#F04E98",
+          green: "#00BFB3",
           orange: "#FF6C2F",
-          purple: "#9170B8",
+        },
+        surface: {
+          0: "#0a0e17",
+          1: "#0f1520",
+          2: "#151d2c",
+          3: "#1b2538",
+          4: "#222e44",
+        },
+        accent: {
+          triage: "#F04E98",
+          diagnosis: "#0077CC",
+          remediation: "#00BFB3",
+          communication: "#FEC514",
         },
       },
+      fontFamily: {
+        mono: ["JetBrains Mono", "Fira Code", "monospace"],
+      },
       animation: {
-        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "slide-in": "slideIn 0.3s ease-out",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "slide-in": "slide-in 0.5s ease-out",
+        "fade-up": "fade-up 0.6s ease-out",
+        "scan-line": "scan-line 3s linear infinite",
       },
       keyframes: {
-        slideIn: {
-          "0%": { transform: "translateX(-10px)", opacity: "0" },
+        "pulse-glow": {
+          "0%, 100%": { opacity: "0.6" },
+          "50%": { opacity: "1" },
+        },
+        "slide-in": {
+          "0%": { transform: "translateX(-20px)", opacity: "0" },
           "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        "fade-up": {
+          "0%": { transform: "translateY(10px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        "scan-line": {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100%)" },
         },
       },
     },

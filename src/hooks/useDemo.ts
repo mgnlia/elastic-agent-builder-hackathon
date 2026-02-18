@@ -1,188 +1,206 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { DemoState, Agent, AgentId } from "@/lib/types";
-import {
-  createInitialDemoState,
-  DEMO_TIMELINE,
-  DEMO_MESSAGES,
-  DEMO_METRICS,
-  STEP_DELAYS,
-} from "@/lib/demo-data";
+import { DemoPhase, DemoState, TimelineEvent, A2AMessage, AgentId } from "@/lib/types";
+import { TIMELINE_EVENTS, A2A_MESSAGES } from "@/lib/demo-data";
 
-function getActiveAgent(step: number): AgentId | null {
-  if (step <= 0 || step > DEMO_TIMELINE.length) return null;
-  return DEMO_TIMELINE[step - 1].agent || null;
-}
+const PHASE_ORDER: DemoPhase[] = [
+  "idle",
+  "alert",
+  "triage",
+  "diagnosis",
+  "remediation",
+  "communication",
+  "resolved",
+];
 
-function updateAgentStatuses(agents: Agent[], step: number): Agent[] {
-  const event = step > 0 ? DEMO_TIMELINE[step - 1] : null;
-  const currentAgent = event?.agent;
+// Cumulative message indices for each phase
+const PHASE_MESSAGE_COUNTS: Record<DemoPhase, number> = {
+  idle: 0,
+  alert: 1,
+  triage: 2,
+  diagnosis: 5,
+  remediation: 8,
+  communication: 10,
+  resolved: 11,
+};
 
-  // Determine which agents have been seen
-  const seenAgents = new Set<AgentId>();
-  for (let i = 0; i < step; i++) {
-    const a = DEMO_TIMELINE[i].agent;
-    if (a) seenAgents.add(a);
-  }
+const PHASE_DURATIONS: Record<DemoPhase, number> = {
+  idle: 0,
+  alert: 2000,
+  triage: 4000,
+  diagnosis: 5000,
+  remediation: 5000,
+  communication: 4000,
+  resolved: 0,
+};
 
-  return agents.map((agent) => {
-    if (agent.id === currentAgent) {
-      return {
-        ...agent,
-        status: "active" as const,
-        messagesProcessed: agent.messagesProcessed + 1,
-        avgResponseTime: event?.durationMs || agent.avgResponseTime || 2500,
-      };
-    }
-    if (seenAgents.has(agent.id) && agent.id !== currentAgent) {
-      return { ...agent, status: "complete" as const };
-    }
-    return { ...agent, status: "idle" as const };
-  });
-}
+const PHASE_TO_AGENT: Record<DemoPhase, AgentId | null> = {
+  idle: null,
+  alert: null,
+  triage: "triage",
+  diagnosis: "diagnosis",
+  remediation: "remediation",
+  communication: "communication",
+  resolved: null,
+};
 
 export function useDemo() {
-  const [state, setState] = useState<DemoState>(createInitialDemoState);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const stepRef = useRef(0);
+  const [state, setState] = useState<DemoState>({
+    phase: "idle",
+    isPlaying: false,
+    speed: 1,
+    currentEventIndex: -1,
+    elapsedTime: 0,
+    events: [],
+    messages: [],
+    activeAgent: null,
+  });
 
-  const clearTimer = useCallback(() => {
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const elapsedRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearTimers = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    if (elapsedRef.current) {
+      clearInterval(elapsedRef.current);
+      elapsedRef.current = null;
+    }
   }, []);
 
-  const advanceStep = useCallback(() => {
+  const advancePhase = useCallback(() => {
     setState((prev) => {
-      const nextStep = prev.currentStep + 1;
-      if (nextStep > DEMO_TIMELINE.length) {
-        return {
-          ...prev,
-          isRunning: false,
-          isPaused: false,
-        };
+      const currentIdx = PHASE_ORDER.indexOf(prev.phase);
+      if (currentIdx >= PHASE_ORDER.length - 1) {
+        return { ...prev, isPlaying: false };
       }
 
-      const event = DEMO_TIMELINE[nextStep - 1];
-      const messagesUpToNow = DEMO_MESSAGES.filter(
-        (m) => m.timestamp <= event.timestamp
-      );
+      const nextPhase = PHASE_ORDER[currentIdx + 1];
+      const eventIdx = currentIdx; // events are 0-indexed starting from alert
+      const newEvents =
+        eventIdx >= 0 && eventIdx < TIMELINE_EVENTS.length
+          ? [...prev.events, TIMELINE_EVENTS[eventIdx]]
+          : prev.events;
+
+      const msgCount = PHASE_MESSAGE_COUNTS[nextPhase];
+      const newMessages = A2A_MESSAGES.slice(0, msgCount);
 
       return {
         ...prev,
-        currentStep: nextStep,
-        incident: {
-          ...prev.incident,
-          phase: event.phase,
-          timeline: DEMO_TIMELINE.slice(0, nextStep),
-          messages: messagesUpToNow,
-          ...(event.phase === "resolved"
-            ? { resolvedTime: event.timestamp }
-            : {}),
-        },
-        agents: updateAgentStatuses(prev.agents, nextStep),
+        phase: nextPhase,
+        currentEventIndex: eventIdx,
+        events: newEvents,
+        messages: newMessages,
+        activeAgent: PHASE_TO_AGENT[nextPhase],
       };
     });
-    stepRef.current += 1;
   }, []);
 
-  const scheduleNext = useCallback(
-    (step: number, speed: number) => {
-      if (step >= DEMO_TIMELINE.length) return;
-      const delay = (STEP_DELAYS[step] || 3000) / speed;
-      timerRef.current = setTimeout(() => {
-        advanceStep();
-        scheduleNext(step + 1, speed);
-      }, delay);
-    },
-    [advanceStep]
-  );
+  // Schedule next phase advance
+  useEffect(() => {
+    if (!state.isPlaying || state.phase === "resolved") {
+      if (state.phase === "resolved") {
+        setState((prev) => ({ ...prev, isPlaying: false }));
+      }
+      return;
+    }
 
-  const start = useCallback(() => {
-    clearTimer();
-    const initial = createInitialDemoState();
-    setState({ ...initial, isRunning: true, isPaused: false });
-    stepRef.current = 0;
+    const duration = PHASE_DURATIONS[state.phase] / state.speed;
+    if (duration > 0) {
+      timerRef.current = setTimeout(advancePhase, duration);
+    } else {
+      // For idle, advance immediately
+      timerRef.current = setTimeout(advancePhase, 500 / state.speed);
+    }
 
-    // Immediately show first event, then schedule rest
-    setTimeout(() => {
-      setState((prev) => {
-        const event = DEMO_TIMELINE[0];
-        return {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [state.phase, state.isPlaying, state.speed, advancePhase]);
+
+  // Elapsed time counter
+  useEffect(() => {
+    if (state.isPlaying && state.phase !== "idle" && state.phase !== "resolved") {
+      elapsedRef.current = setInterval(() => {
+        setState((prev) => ({
           ...prev,
-          currentStep: 1,
-          incident: {
-            ...prev.incident,
-            phase: event.phase,
-            timeline: [event],
-            messages: DEMO_MESSAGES.filter(
-              (m) => m.timestamp <= event.timestamp
-            ),
-          },
-          agents: updateAgentStatuses(prev.agents, 1),
-        };
-      });
-      stepRef.current = 1;
-      scheduleNext(1, 1);
-    }, 500);
-  }, [clearTimer, scheduleNext]);
+          elapsedTime: prev.elapsedTime + 0.1,
+        }));
+      }, 100 / state.speed);
+    } else {
+      if (elapsedRef.current) {
+        clearInterval(elapsedRef.current);
+        elapsedRef.current = null;
+      }
+    }
+
+    return () => {
+      if (elapsedRef.current) clearInterval(elapsedRef.current);
+    };
+  }, [state.isPlaying, state.phase, state.speed]);
+
+  const play = useCallback(() => {
+    setState((prev) => {
+      if (prev.phase === "resolved") {
+        return prev; // Don't restart
+      }
+      return { ...prev, isPlaying: true };
+    });
+  }, []);
 
   const pause = useCallback(() => {
-    clearTimer();
-    setState((prev) => ({ ...prev, isPaused: true }));
-  }, [clearTimer]);
-
-  const resume = useCallback(() => {
-    setState((prev) => {
-      const updated = { ...prev, isPaused: false };
-      scheduleNext(prev.currentStep, prev.speed);
-      return updated;
-    });
-  }, [scheduleNext]);
+    clearTimers();
+    setState((prev) => ({ ...prev, isPlaying: false }));
+  }, [clearTimers]);
 
   const reset = useCallback(() => {
-    clearTimer();
-    stepRef.current = 0;
-    setState(createInitialDemoState());
-  }, [clearTimer]);
+    clearTimers();
+    setState({
+      phase: "idle",
+      isPlaying: false,
+      speed: 1,
+      currentEventIndex: -1,
+      elapsedTime: 0,
+      events: [],
+      messages: [],
+      activeAgent: null,
+    });
+  }, [clearTimers]);
 
-  const stepForward = useCallback(() => {
-    clearTimer();
-    advanceStep();
-    setState((prev) => ({
-      ...prev,
-      isRunning: true,
-      isPaused: true,
-    }));
-  }, [clearTimer, advanceStep]);
+  const setSpeed = useCallback((speed: number) => {
+    setState((prev) => ({ ...prev, speed }));
+  }, []);
 
-  const setSpeed = useCallback(
-    (speed: number) => {
-      setState((prev) => {
-        if (prev.isRunning && !prev.isPaused) {
-          clearTimer();
-          scheduleNext(prev.currentStep, speed);
-        }
-        return { ...prev, speed };
-      });
+  const skipToPhase = useCallback(
+    (targetPhase: DemoPhase) => {
+      clearTimers();
+      const targetIdx = PHASE_ORDER.indexOf(targetPhase);
+      const events = TIMELINE_EVENTS.slice(0, targetIdx);
+      const msgCount = PHASE_MESSAGE_COUNTS[targetPhase];
+      const messages = A2A_MESSAGES.slice(0, msgCount);
+
+      setState((prev) => ({
+        ...prev,
+        phase: targetPhase,
+        currentEventIndex: targetIdx - 1,
+        events,
+        messages,
+        activeAgent: PHASE_TO_AGENT[targetPhase],
+        isPlaying: false,
+      }));
     },
-    [clearTimer, scheduleNext]
+    [clearTimers]
   );
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => clearTimer();
-  }, [clearTimer]);
 
   return {
     state,
-    start,
+    play,
     pause,
-    resume,
     reset,
-    stepForward,
     setSpeed,
+    skipToPhase,
   };
 }

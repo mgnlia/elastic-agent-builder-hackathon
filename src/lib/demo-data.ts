@@ -1,40 +1,26 @@
-import type {
-  Agent,
-  Incident,
-  TimelineEvent,
-  A2AMessage,
-  MetricsData,
-  DemoState,
-} from "./types";
-
-// ── Agent Definitions ─────────────────────────────────────────────────
+import { Agent, TimelineEvent, A2AMessage, MetricComparison } from "./types";
 
 export const AGENTS: Agent[] = [
   {
     id: "triage",
     name: "Triage Agent",
-    displayName: "🔍 Triage",
     icon: "🔍",
-    description:
-      "Classifies incoming alerts by severity and routes to the appropriate specialist agent.",
-    tools: [
-      "error_rate_spike",
-      "search_service_catalog",
-      "search_recent_alerts",
-    ],
-    status: "idle",
-    messagesProcessed: 0,
-    avgResponseTime: 0,
+    color: "#F04E98",
+    bgColor: "rgba(240, 78, 152, 0.1)",
+    borderColor: "rgba(240, 78, 152, 0.3)",
+    description: "Classifies severity, identifies affected services, routes to specialists",
+    tools: ["error_rate_spike", "search_service_catalog", "search_recent_alerts"],
+    avgTime: 14,
   },
   {
     id: "diagnosis",
     name: "Diagnosis Agent",
-    displayName: "🔬 Diagnosis",
     icon: "🔬",
-    description:
-      "Correlates logs and metrics using ES|QL to identify incident root cause.",
+    color: "#0077CC",
+    bgColor: "rgba(0, 119, 204, 0.1)",
+    borderColor: "rgba(0, 119, 204, 0.3)",
+    description: "Correlates logs & metrics via ES|QL, identifies root cause",
     tools: [
-      "error_rate_spike",
       "cpu_anomaly",
       "log_correlation",
       "service_latency",
@@ -43,350 +29,263 @@ export const AGENTS: Agent[] = [
       "dependency_errors",
       "throughput_drop",
     ],
-    status: "idle",
-    messagesProcessed: 0,
-    avgResponseTime: 0,
+    avgTime: 30,
   },
   {
     id: "remediation",
     name: "Remediation Agent",
-    displayName: "🔧 Remediation",
     icon: "🔧",
-    description:
-      "Executes remediation actions based on diagnosis — restarts, scales, rolls back.",
-    tools: [
-      "restart_service",
-      "scale_service",
-      "rollback_deployment",
-      "update_config",
-    ],
-    status: "idle",
-    messagesProcessed: 0,
-    avgResponseTime: 0,
+    color: "#00BFB3",
+    bgColor: "rgba(0, 191, 179, 0.1)",
+    borderColor: "rgba(0, 191, 179, 0.3)",
+    description: "Executes fix actions — rollback, restart, scale, config update",
+    tools: ["restart_service", "scale_service", "rollback_deployment", "update_config"],
+    avgTime: 30,
   },
   {
     id: "communication",
     name: "Communication Agent",
-    displayName: "📢 Communication",
     icon: "📢",
-    description:
-      "Generates incident reports, status updates, and postmortem documents.",
+    color: "#FEC514",
+    bgColor: "rgba(254, 197, 20, 0.1)",
+    borderColor: "rgba(254, 197, 20, 0.3)",
+    description: "Generates incident reports, status updates, and postmortems",
     tools: ["search_incident_history"],
-    status: "idle",
-    messagesProcessed: 0,
-    avgResponseTime: 0,
+    avgTime: 20,
   },
 ];
 
-// ── Demo Scenario: Payment Service CPU Spike ──────────────────────────
-
-const BASE_TIME = Date.now();
-const t = (offsetSec: number) => BASE_TIME + offsetSec * 1000;
-
-export const DEMO_TIMELINE: TimelineEvent[] = [
+export const TIMELINE_EVENTS: TimelineEvent[] = [
+  {
+    id: "evt-0",
+    phase: "alert",
+    timestamp: "14:23:01",
+    title: "🚨 CloudWatch Alarm Triggered",
+    description: "CPU utilization >95% sustained for 5 minutes on payment-service cluster",
+    details: [
+      "Host: payment-svc-prod-{1,2,3}",
+      "CPU: 97.3%, 96.8%, 95.1%",
+      "Memory: 89.2% avg across hosts",
+      "Source: CloudWatch → PagerDuty → Incident Commander",
+    ],
+    icon: "🚨",
+    duration: 1,
+  },
   {
     id: "evt-1",
-    timestamp: t(0),
-    phase: "alert",
-    title: "🚨 Alert: CPU Spike on payment-service",
-    description:
-      "CloudWatch alarm triggered: payment-service CPU usage exceeded 95% threshold across 3 hosts for >5 minutes.",
-    severity: "P1",
+    phase: "triage",
+    timestamp: "14:23:02",
+    title: "🔍 Triage Agent Activated",
+    description: "Classifying incident severity and identifying affected services",
+    details: [
+      "Running error_rate_spike for payment-service...",
+      "Found 1,247 errors in last 15 min (12x baseline)",
+      "Error types: OutOfMemoryError (847), ConnectionTimeout (400)",
+      "Severity: P1 — Critical (user-facing payment failures)",
+      "Affected: payment-service, checkout-api, order-processor",
+    ],
+    agentId: "triage",
+    esqlQuery: `FROM logs-payment-service-*
+| WHERE @timestamp > NOW() - 15 minutes
+  AND log.level IN ("ERROR", "FATAL")
+| STATS error_count = COUNT(*) BY error.type
+| SORT error_count DESC`,
+    icon: "🔍",
+    duration: 14,
   },
   {
     id: "evt-2",
-    timestamp: t(8),
-    phase: "triage",
-    agent: "triage",
-    title: "Triage Agent activated",
-    description: "Analyzing alert context and checking for related incidents.",
-    tool: "search_recent_alerts",
+    phase: "diagnosis",
+    timestamp: "14:23:16",
+    title: "🔬 Diagnosis Agent Activated",
+    description: "Correlating logs, metrics, and deployments via ES|QL",
+    details: [
+      "Running cpu_anomaly → 3 hosts above 95th percentile",
+      "Running memory_pressure → heap usage 94.7% (critical)",
+      "Running log_correlation → OOM errors spike at 14:08",
+      "Running deployment_events → v2.14.0 deployed at 14:05",
+      "Root cause: Memory leak in payment-service v2.14.0",
+      "Correlation: OOM errors began 3 min after v2.14.0 deploy",
+    ],
+    agentId: "diagnosis",
+    esqlQuery: `FROM metrics-system.cpu-*
+| WHERE @timestamp > NOW() - 1 hour
+  AND host.name LIKE "payment-svc-prod-*"
+| EVAL cpu_pct = system.cpu.total.norm.pct * 100
+| STATS avg_cpu = AVG(cpu_pct),
+        max_cpu = MAX(cpu_pct)
+  BY host.name, @timestamp = BUCKET(@timestamp, 1 minute)
+| WHERE avg_cpu > 90
+| SORT @timestamp DESC`,
+    icon: "🔬",
+    duration: 30,
   },
   {
     id: "evt-3",
-    timestamp: t(15),
-    phase: "triage",
-    agent: "triage",
-    title: "Severity classified: P1 — Critical",
-    description:
-      "Payment service is revenue-critical. 3 hosts affected. Error rate spiking 12x baseline. Classified as P1 with immediate routing to Diagnosis.",
-    severity: "P1",
-    tool: "error_rate_spike",
-    esqlQuery: `FROM logs-*
-| WHERE @timestamp >= NOW() - 30 MINUTES
-| WHERE log.level IN ("error", "critical")
-| STATS error_count = COUNT(*) BY service.name, error.type
-| SORT error_count DESC
-| LIMIT 20`,
-    result:
-      "payment-service: 1,247 errors (OutOfMemoryError: 892, ConnectionTimeout: 355)",
+    phase: "remediation",
+    timestamp: "14:23:46",
+    title: "🔧 Remediation Agent Activated",
+    description: "Executing rollback from v2.14.0 to v2.13.2",
+    details: [
+      "Action: rollback_deployment payment-service v2.13.2",
+      "Rolling back host payment-svc-prod-1... ✅",
+      "Rolling back host payment-svc-prod-2... ✅",
+      "Rolling back host payment-svc-prod-3... ✅",
+      "Post-rollback CPU: 34.2%, 31.8%, 29.7% ✅",
+      "Post-rollback memory: 52.1% avg ✅",
+      "Error rate: 2/min (baseline normal) ✅",
+    ],
+    agentId: "remediation",
+    icon: "🔧",
+    duration: 30,
   },
   {
     id: "evt-4",
-    timestamp: t(22),
-    phase: "triage",
-    agent: "triage",
-    title: "Routing to Diagnosis Agent",
-    description:
-      "Triage complete. Handing off to Diagnosis Agent with structured summary: P1, payment-service, CPU+memory spike, OOM errors.",
-    durationMs: 14000,
+    phase: "communication",
+    timestamp: "14:24:16",
+    title: "📢 Communication Agent Activated",
+    description: "Generating incident report and postmortem",
+    details: [
+      "Status: RESOLVED — Payment service restored",
+      "Impact: ~3,200 failed transactions over 19 minutes",
+      "Root cause: Memory leak in v2.14.0 (PR #1847)",
+      "Resolution: Rolled back to v2.13.2",
+      "Action items: Fix memory leak, add heap monitoring alert",
+      "Postmortem draft sent to #incident-reviews",
+    ],
+    agentId: "communication",
+    icon: "📢",
+    duration: 20,
   },
   {
     id: "evt-5",
-    timestamp: t(25),
-    phase: "diagnosis",
-    agent: "diagnosis",
-    title: "Diagnosis Agent activated",
-    description:
-      "Running ES|QL correlation queries across logs and metrics indices.",
-  },
-  {
-    id: "evt-6",
-    timestamp: t(32),
-    phase: "diagnosis",
-    agent: "diagnosis",
-    title: "CPU anomaly detected on 3 hosts",
-    description:
-      "All 3 payment-service hosts showing CPU >95%. Spike correlates with deployment event 47 minutes ago.",
-    tool: "cpu_anomaly",
-    esqlQuery: `FROM metrics-*
-| WHERE @timestamp >= NOW() - 1 HOUR
-| STATS max_cpu = MAX(system.cpu.total.pct) BY host.name
-| WHERE max_cpu > 0.9
-| SORT max_cpu DESC`,
-    result:
-      "pay-host-01: 98.2%, pay-host-02: 96.7%, pay-host-03: 95.1%",
-  },
-  {
-    id: "evt-7",
-    timestamp: t(40),
-    phase: "diagnosis",
-    agent: "diagnosis",
-    title: "Memory pressure confirmed",
-    description:
-      "Memory usage at 94-97% across all hosts. Heap exhaustion causing OOM errors.",
-    tool: "memory_pressure",
-    esqlQuery: `FROM metrics-*
-| WHERE @timestamp >= NOW() - 1 HOUR
-| STATS max_mem = MAX(system.memory.used.pct) BY host.name
-| WHERE max_mem > 0.9
-| SORT max_mem DESC`,
-    result: "pay-host-01: 97.3%, pay-host-02: 95.8%, pay-host-03: 94.2%",
-  },
-  {
-    id: "evt-8",
-    timestamp: t(48),
-    phase: "diagnosis",
-    agent: "diagnosis",
-    title: "Deployment correlation found",
-    description:
-      "Deployment v2.14.0 rolled out 47 minutes ago. Memory leak introduced in new connection pooling code.",
-    tool: "deployment_events",
-    esqlQuery: `FROM logs-*
-| WHERE @timestamp >= NOW() - 2 HOURS
-| WHERE event.category == "deployment"
-| STATS deploy_count = COUNT(*) BY service.name, event.action
-| SORT deploy_count DESC`,
-    result: "payment-service: deploy v2.14.0 at 14:23 UTC (47 min ago)",
-  },
-  {
-    id: "evt-9",
-    timestamp: t(55),
-    phase: "diagnosis",
-    agent: "diagnosis",
-    title: "Root cause identified",
-    description:
-      "Root cause: Memory leak in payment-service v2.14.0 connection pooling. Connections not released after timeout, causing heap exhaustion → OOM → CPU spike from GC thrashing.",
-    durationMs: 30000,
-  },
-  {
-    id: "evt-10",
-    timestamp: t(60),
-    phase: "remediation",
-    agent: "remediation",
-    title: "Remediation Agent activated",
-    description:
-      "Received diagnosis: rollback recommended. Evaluating safest remediation path.",
-  },
-  {
-    id: "evt-11",
-    timestamp: t(68),
-    phase: "remediation",
-    agent: "remediation",
-    title: "Rolling back to v2.13.2",
-    description:
-      "Initiating rollback to last known stable version v2.13.2. Rolling restart to avoid service interruption.",
-    tool: "rollback_deployment",
-    result: "Rollback initiated: payment-service v2.14.0 → v2.13.2",
-  },
-  {
-    id: "evt-12",
-    timestamp: t(90),
-    phase: "remediation",
-    agent: "remediation",
-    title: "Rollback complete — metrics normalizing",
-    description:
-      "All 3 hosts now running v2.13.2. CPU dropping (95% → 42%), memory stabilizing (97% → 68%). Error rate returning to baseline.",
-    durationMs: 30000,
-  },
-  {
-    id: "evt-13",
-    timestamp: t(95),
-    phase: "communication",
-    agent: "communication",
-    title: "Communication Agent activated",
-    description: "Generating incident report and stakeholder notifications.",
-  },
-  {
-    id: "evt-14",
-    timestamp: t(105),
-    phase: "communication",
-    agent: "communication",
-    title: "Incident report generated",
-    description:
-      "Status update sent to #incidents Slack channel. Postmortem draft created with root cause analysis, timeline, and action items.",
-    tool: "search_incident_history",
-    result:
-      "Similar incident INC-2847 (3 months ago) — same service, different root cause. Added to postmortem context.",
-  },
-  {
-    id: "evt-15",
-    timestamp: t(115),
     phase: "resolved",
-    title: "✅ Incident Resolved — MTTR: 1m 55s",
-    description:
-      "Incident fully resolved. Payment-service restored to healthy state. MTTR: 1 minute 55 seconds (vs. 45-minute manual average). Postmortem scheduled.",
-    durationMs: 115000,
+    timestamp: "14:24:36",
+    title: "✅ Incident Resolved",
+    description: "Payment service fully restored — MTTR: 1 minute 55 seconds",
+    details: [
+      "Total resolution time: 1m 55s",
+      "Manual equivalent MTTR: ~45 minutes",
+      "Improvement: 95.7% reduction",
+      "All 4 agents completed successfully",
+      "Zero human intervention required",
+    ],
+    icon: "✅",
+    duration: 0,
   },
 ];
 
-export const DEMO_MESSAGES: A2AMessage[] = [
+export const A2A_MESSAGES: A2AMessage[] = [
+  {
+    id: "msg-0",
+    from: "system",
+    to: "triage",
+    content: "ALERT: CPU >95% on payment-service cluster (3 hosts). Source: CloudWatch.",
+    timestamp: "14:23:01",
+    type: "alert",
+  },
   {
     id: "msg-1",
-    timestamp: t(8),
-    from: "alert",
+    from: "triage",
     to: "triage",
-    type: "handoff",
-    summary: "CloudWatch alarm: payment-service CPU >95% on 3 hosts",
-    durationMs: 200,
+    content: "Running error_rate_spike tool... Found 1,247 errors (OOM: 847, ConnTimeout: 400)",
+    timestamp: "14:23:05",
+    type: "response",
   },
   {
     id: "msg-2",
-    timestamp: t(22),
     from: "triage",
     to: "diagnosis",
+    content:
+      "HANDOFF: P1 incident — payment-service CPU spike with OOM errors. 3 hosts affected. Investigate root cause.",
+    timestamp: "14:23:15",
     type: "handoff",
-    summary:
-      "P1 — payment-service: CPU spike + 1,247 errors (OOM + ConnTimeout). 3 hosts affected.",
-    durationMs: 350,
   },
   {
     id: "msg-3",
-    timestamp: t(30),
     from: "diagnosis",
     to: "diagnosis",
-    type: "query",
-    summary: "Running ES|QL: cpu_anomaly, memory_pressure, deployment_events",
-    durationMs: 1200,
+    content: "Running ES|QL correlation: cpu_anomaly → memory_pressure → deployment_events",
+    timestamp: "14:23:20",
+    type: "response",
   },
   {
     id: "msg-4",
-    timestamp: t(55),
     from: "diagnosis",
-    to: "remediation",
-    type: "handoff",
-    summary:
-      "Root cause: memory leak in v2.14.0 connection pooling. Recommend: rollback to v2.13.2.",
-    durationMs: 280,
+    to: "diagnosis",
+    content:
+      "ROOT CAUSE IDENTIFIED: Memory leak in payment-service v2.14.0 (deployed 14:05). OOM errors began at 14:08.",
+    timestamp: "14:23:40",
+    type: "response",
   },
   {
     id: "msg-5",
-    timestamp: t(68),
-    from: "remediation",
+    from: "diagnosis",
     to: "remediation",
-    type: "action",
-    summary: "Executing rollback: payment-service v2.14.0 → v2.13.2",
-    durationMs: 22000,
+    content:
+      "HANDOFF: Root cause = memory leak in v2.14.0. Recommend rollback to v2.13.2 (last stable).",
+    timestamp: "14:23:45",
+    type: "handoff",
   },
   {
     id: "msg-6",
-    timestamp: t(90),
     from: "remediation",
-    to: "communication",
-    type: "handoff",
-    summary:
-      "Rollback complete. CPU: 95%→42%, Memory: 97%→68%, Errors: baseline. Service healthy.",
-    durationMs: 310,
+    to: "remediation",
+    content: "Executing rollback_deployment: payment-service v2.14.0 → v2.13.2 on 3 hosts...",
+    timestamp: "14:23:50",
+    type: "response",
   },
   {
     id: "msg-7",
-    timestamp: t(105),
+    from: "remediation",
+    to: "remediation",
+    content: "Rollback complete. CPU: 32% avg, Memory: 52%, Error rate: baseline. All hosts healthy.",
+    timestamp: "14:24:10",
+    type: "response",
+  },
+  {
+    id: "msg-8",
+    from: "remediation",
+    to: "communication",
+    content:
+      "HANDOFF: Incident remediated. Rolled back to v2.13.2. All metrics normalized. Generate report.",
+    timestamp: "14:24:15",
+    type: "handoff",
+  },
+  {
+    id: "msg-9",
     from: "communication",
     to: "communication",
-    type: "report",
-    summary:
-      "Incident report + postmortem generated. MTTR: 1m 55s. Action items: fix connection pool leak in v2.14.1.",
-    durationMs: 8000,
+    content:
+      "Generating incident report... Compiling timeline, impact analysis, and postmortem draft.",
+    timestamp: "14:24:20",
+    type: "response",
+  },
+  {
+    id: "msg-10",
+    from: "communication",
+    to: "system",
+    content:
+      "RESOLVED: Incident report published. MTTR: 1m 55s. Postmortem sent to #incident-reviews.",
+    timestamp: "14:24:35",
+    type: "response",
   },
 ];
 
-export const DEMO_INCIDENT: Incident = {
-  id: "INC-3142",
-  title: "Payment Service CPU Spike — OOM from Connection Pool Leak",
-  severity: "P1",
-  service: "payment-service",
-  startTime: t(0),
-  resolvedTime: t(115),
-  phase: "alert",
-  mttrMinutes: 1.92,
-  rootCause:
-    "Memory leak in v2.14.0 connection pooling code — connections not released after timeout, causing heap exhaustion and GC thrashing.",
-  resolution:
-    "Rolled back to v2.13.2. All metrics normalized within 30 seconds of rollback completion.",
-  timeline: DEMO_TIMELINE,
-  messages: DEMO_MESSAGES,
-};
-
-export const DEMO_METRICS: MetricsData = {
-  mttrBefore: 45,
-  mttrAfter: 1.92,
-  mttrReduction: 95.7,
-  incidentsResolved: 47,
-  avgDiagnosisTime: 30,
-  avgRemediationTime: 30,
-  agentMessages: 7,
-  esqlQueriesRun: 5,
-  automatedActions: 2,
-};
-
-export function createInitialDemoState(): DemoState {
-  return {
-    isRunning: false,
-    isPaused: false,
-    currentStep: 0,
-    totalSteps: DEMO_TIMELINE.length,
-    speed: 1,
-    incident: { ...DEMO_INCIDENT, phase: "alert", timeline: [], messages: [] },
-    agents: AGENTS.map((a) => ({ ...a })),
-    metrics: { ...DEMO_METRICS },
-  };
-}
-
-// Step delays in ms (at 1x speed) — how long to wait before showing each step
-export const STEP_DELAYS: number[] = [
-  2000, // Alert received
-  3000, // Triage activates
-  4000, // Severity classified
-  3000, // Routing to diagnosis
-  2000, // Diagnosis activates
-  4000, // CPU anomaly
-  4000, // Memory pressure
-  4000, // Deployment correlation
-  3000, // Root cause
-  2000, // Remediation activates
-  4000, // Rolling back
-  6000, // Rollback complete
-  2000, // Communication activates
-  4000, // Report generated
-  3000, // Resolved
+export const METRICS: MetricComparison[] = [
+  { label: "Mean Time to Resolution", manual: 45, automated: 1.92, unit: "min" },
+  { label: "Detection to Triage", manual: 8, automated: 0.23, unit: "min" },
+  { label: "Triage to Diagnosis", manual: 15, automated: 0.5, unit: "min" },
+  { label: "Diagnosis to Fix", manual: 18, automated: 0.5, unit: "min" },
+  { label: "Fix to Communication", manual: 4, automated: 0.33, unit: "min" },
 ];
+
+export const PHASE_TIMING: Record<string, number> = {
+  idle: 0,
+  alert: 1,
+  triage: 14,
+  diagnosis: 30,
+  remediation: 30,
+  communication: 20,
+  resolved: 0,
+};
