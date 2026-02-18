@@ -1,99 +1,121 @@
-# 🛡️ Elastic Incident Commander — Multi-Agent A2A Dashboard
+# 🚨 Elastic Incident Commander
 
-> **Real-time incident response dashboard powered by 4 AI agents using Elastic Agent Builder and A2A Protocol.**
+> Multi-agent DevOps incident response system built with [Elastic Agent Builder](https://www.elastic.co/docs/explore-analyze/ai-features/elastic-agent-builder)
 
-Built for the [Elastic Agent Builder Hackathon](https://elasticsearch-agent-builder-hackathon.devpost.com/).
+**Elasticsearch Agent Builder Hackathon** — [elasticsearch.devpost.com](https://elasticsearch.devpost.com/)
 
-## 🎯 What It Does
+## The Problem
 
-Elastic Incident Commander demonstrates a **4-agent A2A (Agent-to-Agent) coordination system** for DevOps incident response. The interactive dashboard simulates a real-world scenario where a payment service CPU spike is detected, diagnosed, remediated, and communicated — all autonomously by AI agents in under 2 minutes.
+Production incidents cost engineering teams an average of **45 minutes** to resolve (MTTR). Most of that time is spent on manual triage, log correlation, and cross-team communication — not the actual fix.
 
-### The Scenario: Payment Service CPU Spike
+## The Solution
 
-1. **🚨 Alert** — CloudWatch detects CPU >95% across 3 production hosts
-2. **🔍 Triage Agent** — Classifies severity (P1), identifies 1,247 OOM errors
-3. **🔬 Diagnosis Agent** — Correlates logs/metrics via ES|QL, finds memory leak in v2.14.0
-4. **🔧 Remediation Agent** — Executes rolling rollback to v2.13.2
-5. **📢 Communication Agent** — Generates incident report and postmortem
-6. **✅ Resolved** — MTTR: 1 minute 55 seconds (95.7% reduction vs manual)
+Incident Commander deploys **4 specialized AI agents** that collaborate via the [A2A (Agent-to-Agent) protocol](https://www.elastic.co/search-labs/blog/agent-builder-a2a-strands-agents-guide) to resolve incidents in under **5 minutes**:
 
-## 🔧 How It Leverages Elastic
+| Agent | Role | Tools |
+|-------|------|-------|
+| **🔍 Triage** | Classifies alerts, assigns severity, routes to specialists | ES\|QL (error spikes, service catalog, recent alerts) |
+| **🔬 Diagnosis** | Correlates logs & metrics via ES\|QL to find root cause | ES\|QL (all 8 queries — errors, CPU, memory, latency, deployments, dependencies, throughput) |
+| **🔧 Remediation** | Executes fixes — restart, scale, rollback, config update | Custom tools (4 webhook-based actions) |
+| **📢 Communication** | Generates status updates, timelines, postmortems | ES\|QL (incident history search) |
 
-- **ES|QL Queries** — Each agent uses Elastic's ES|QL for real-time log correlation, CPU anomaly detection, memory pressure analysis, and deployment event tracking
-- **12 ES|QL Tools** — Custom tool definitions for `error_rate_spike`, `cpu_anomaly`, `log_correlation`, `service_latency`, `memory_pressure`, `deployment_events`, and more
-- **Elastic Agent Builder** — Agent definitions follow the Elastic Agent Builder pattern with tool schemas and response handling
-- **Observability Data** — Agents query `logs-*`, `metrics-system.cpu-*`, and `metrics-system.memory-*` indices
+### Architecture
 
-## 🤖 A2A Protocol
+```
+Alert → [Triage Agent] → severity + routing
+              ↓
+        [Diagnosis Agent] → root cause via ES|QL
+              ↓
+        [Remediation Agent] → automated fix via Custom Tools
+              ↓
+        [Communication Agent] → status update + postmortem
+```
 
-The agents communicate using the **A2A (Agent-to-Agent) Protocol**:
+## Tech Stack
 
-- **Alert** → System triggers Triage Agent
-- **Handoff** → Triage hands off to Diagnosis with context
-- **Handoff** → Diagnosis hands off to Remediation with root cause
-- **Handoff** → Remediation hands off to Communication with resolution
-- **Response** → Communication publishes final incident report
+- **Elastic Cloud Serverless** — Data platform (logs, metrics, alerts)
+- **Elastic Agent Builder** — Agent creation, tool binding, A2A orchestration
+- **ES|QL** — 8 pre-written queries for log/metric correlation
+- **Custom Tools** — 4 webhook-based remediation actions
+- **Python + uv** — Orchestration layer & CLI
+- **Next.js** — Incident dashboard (frontend)
 
-Each handoff includes full context transfer — no information is lost between agents.
-
-## 📊 Key Metrics
-
-| Metric | Manual | Automated | Improvement |
-|--------|--------|-----------|-------------|
-| Mean Time to Resolution | 45 min | 1m 55s | **95.7%** |
-| Detection to Triage | 8 min | 14s | **97.1%** |
-| Triage to Diagnosis | 15 min | 30s | **96.7%** |
-| Diagnosis to Fix | 18 min | 30s | **97.2%** |
-| Fix to Communication | 4 min | 20s | **91.7%** |
-
-## 🚀 Tech Stack
-
-- **Next.js 14** — React framework with App Router
-- **TypeScript** — Full type safety
-- **Tailwind CSS** — Utility-first styling with custom dark theme
-- **Framer Motion** — Smooth animations and transitions
-- **Lucide React** — Icon library
-- **JetBrains Mono** — Monospace font for the terminal aesthetic
-
-## 🏃 Getting Started
+## Quick Start
 
 ```bash
-npm install
-npm run dev
+# Clone
+git clone https://github.com/mgnlia/elastic-agent-builder-hackathon.git
+cd elastic-agent-builder-hackathon
+
+# Install dependencies (requires uv)
+uv sync
+
+# Configure
+cp .env.example .env
+# Edit .env with your Elastic Cloud credentials
+
+# Verify setup
+uv run incident-commander check
+
+# Show system info
+uv run incident-commander info
+
+# List agents
+uv run incident-commander agents
+
+# List tools
+uv run incident-commander tools
+
+# Run tests
+uv run pytest tests/ -v
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
-
-## 🌐 Deployment
-
-Deployed on Vercel:
-
-```bash
-vercel --prod
-```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-src/
-├── app/
-│   ├── layout.tsx          # Root layout with metadata
-│   ├── page.tsx            # Main dashboard page
-│   └── globals.css         # Global styles + custom scrollbar
-├── components/
-│   ├── Header.tsx          # Top bar with status + badges
-│   ├── DemoControls.tsx    # Play/pause/speed controls + phase progress
-│   ├── IncidentTimeline.tsx # Left panel: event cards with ES|QL queries
-│   ├── AgentPanel.tsx      # Center: agent network + A2A message flow
-│   └── MetricsDashboard.tsx # Right: MTTR comparison metrics
-├── hooks/
-│   └── useDemo.ts          # State machine for demo playback
-└── lib/
-    ├── types.ts            # TypeScript interfaces
-    ├── utils.ts            # Helper functions
-    └── demo-data.ts        # Mock incident data + agent definitions
+├── incident_commander/
+│   ├── __init__.py          # Package init
+│   ├── agents.py            # Agent definitions (Triage, Diagnosis, Remediation, Communication)
+│   ├── cli.py               # CLI entry point (info, check, agents, tools)
+│   ├── config.py            # Configuration management (dotenv-based)
+│   ├── elastic_client.py    # Elastic Agent Builder API client
+│   └── tools.py             # Tool definitions — 8 ES|QL + 4 custom (12 total)
+├── tests/
+│   ├── test_agents.py       # Agent definition tests
+│   ├── test_tools.py        # Tool definition tests
+│   ├── test_config.py       # Configuration tests
+│   └── test_cli.py          # CLI command tests
+├── .github/workflows/ci.yml # CI: lint + test + import check
+├── pyproject.toml           # Python project config (uv + hatchling)
+├── .env.example             # Environment variable template
+├── LICENSE                  # Apache 2.0
+└── README.md
 ```
 
-## 📜 License
+## Tools Reference
 
-MIT
+### ES|QL Tools (8)
+
+| Tool | Description |
+|------|-------------|
+| `error_rate_spike` | Detect error-rate spikes across services (30 min window) |
+| `cpu_anomaly` | Find hosts with CPU usage > 90% (1 hour window) |
+| `log_correlation` | Correlate error/critical logs by service and error type |
+| `service_latency` | Check service latency for SLA breaches (avg > 500ms or p99 > 2s) |
+| `memory_pressure` | Detect hosts with memory usage > 90% (1 hour window) |
+| `deployment_events` | List recent deployment events (2 hour window) |
+| `dependency_errors` | Analyze downstream dependency errors for cascading failures |
+| `throughput_drop` | Detect significant drops in request throughput |
+
+### Custom Tools (4)
+
+| Tool | Description |
+|------|-------------|
+| `restart_service` | Trigger a rolling restart for a service |
+| `scale_service` | Trigger horizontal scaling (add replicas) |
+| `rollback_deployment` | Roll back to previous stable deployment version |
+| `update_config` | Apply a configuration change (feature flag, rate limit) |
+
+## License
+
+[Apache 2.0](LICENSE)
