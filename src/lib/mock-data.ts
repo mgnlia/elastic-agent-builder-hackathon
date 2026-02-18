@@ -182,7 +182,7 @@ export const DEMO_INCIDENT: Incident = {
       agent: "diagnosis",
       action: "Root Cause Identified",
       detail:
-        "ROOT CAUSE: Deployment v2.14.3 halved connection pool size (500→250). Under normal load (300 concurrent), pool exhausts immediately. Recommending rollback to v2.14.2.",
+        "ROOT CAUSE: Deployment v2.14.3 halved connection pool size (500 to 250). Under normal load (300 concurrent), pool exhausts immediately. Recommending rollback to v2.14.2.",
     },
     {
       id: "t10",
@@ -325,12 +325,12 @@ export const MTTR_COMPARISON = {
     label: "Incident Commander",
     avgMinutes: 5,
     steps: [
-      { step: "Alert received → Triage", minutes: 0.1 },
+      { step: "Alert received + Triage", minutes: 0.1 },
       { step: "Severity classified", minutes: 0.3 },
       { step: "ES|QL correlation", minutes: 1.0 },
       { step: "Root cause identified", minutes: 2.0 },
-      { step: "Remediation executed", minutes: 3.5 },
-      { step: "Verification complete", minutes: 4.5 },
+      { step: "Rollback executed", minutes: 3.5 },
+      { step: "Verification", minutes: 4.5 },
       { step: "Postmortem generated", minutes: 5.0 },
     ],
   },
