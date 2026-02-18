@@ -1,85 +1,65 @@
-"use client";
-
 import { Header } from "@/components/Header";
-import { DemoControls } from "@/components/DemoControls";
+import { MetricsGrid } from "@/components/MetricsGrid";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
 import { AgentPanel } from "@/components/AgentPanel";
-import { MetricsDashboard } from "@/components/MetricsDashboard";
-import { useDemo } from "@/hooks/useDemo";
+import { MTTRComparison } from "@/components/MTTRComparison";
+import { RecentIncidents } from "@/components/RecentIncidents";
 
 export default function Home() {
-  const { state, start, pause, resume, reset, stepForward, setSpeed } =
-    useDemo();
-
-  const isResolved = state.incident.phase === "resolved";
-
   return (
-    <div className="min-h-screen bg-elastic-darker text-elastic-text">
-      <Header
-        incidentId={state.incident.id}
-        phase={state.incident.phase}
-        isRunning={state.isRunning}
-      />
+    <div className="min-h-screen">
+      <Header />
 
-      <main className="max-w-[1920px] mx-auto px-6 py-4">
-        {/* Demo Controls */}
-        <div className="mb-4">
-          <DemoControls
-            isRunning={state.isRunning}
-            isPaused={state.isPaused}
-            currentStep={state.currentStep}
-            totalSteps={state.totalSteps}
-            speed={state.speed}
-            onStart={start}
-            onPause={pause}
-            onResume={resume}
-            onReset={reset}
-            onSpeedChange={setSpeed}
-            onStepForward={stepForward}
-          />
-        </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Metrics */}
+        <MetricsGrid />
 
-        {/* Main Grid: Timeline | Agents | Metrics */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" style={{ height: "calc(100vh - 200px)" }}>
-          {/* Timeline — left column */}
-          <div className="lg:col-span-4 overflow-hidden">
-            <IncidentTimeline
-              events={state.incident.timeline}
-              currentStep={state.currentStep}
-            />
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Timeline — 2 cols */}
+          <div className="lg:col-span-2 space-y-6">
+            <IncidentTimeline />
+            <MTTRComparison />
           </div>
 
-          {/* Agent Panel — center */}
-          <div className="lg:col-span-4 overflow-hidden">
-            <AgentPanel
-              agents={state.agents}
-              messages={state.incident.messages}
-            />
-          </div>
-
-          {/* Metrics — right column */}
-          <div className="lg:col-span-4 overflow-y-auto">
-            <MetricsDashboard
-              metrics={state.metrics}
-              incident={state.incident}
-              isResolved={isResolved}
-            />
+          {/* Sidebar — 1 col */}
+          <div className="space-y-6">
+            <AgentPanel />
+            <RecentIncidents />
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="mt-6 py-4 border-t border-elastic-border text-center">
-          <p className="text-xs text-elastic-muted">
-            Built with{" "}
-            <span className="text-elastic-accent font-medium">
-              Elastic Agent Builder
-            </span>{" "}
-            ×{" "}
-            <span className="text-elastic-blue font-medium">
-              A2A Protocol
-            </span>{" "}
-            — Elasticsearch Agent Builder Hackathon 2026
-          </p>
+        <footer className="border-t border-gray-800 pt-6 pb-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <p className="text-sm text-gray-500">
+                Built for the{" "}
+                <a
+                  href="https://elasticsearch-agent-builder-hackathon.devpost.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-elastic-blue hover:underline"
+                >
+                  Elasticsearch Agent Builder Hackathon
+                </a>
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                4 AI agents × 12 tools × A2A protocol — reducing MTTR from 45min to 5min
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://github.com/mgnlia/elastic-agent-builder-hackathon"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                GitHub
+              </a>
+              <span className="text-xs text-gray-700">MIT License</span>
+            </div>
+          </div>
         </footer>
       </main>
     </div>

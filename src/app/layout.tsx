@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Incident Commander — Elastic Agent Builder",
   description:
-    "Multi-agent DevOps incident response powered by Elastic Agent Builder and A2A Protocol. 4 specialized agents collaborate to reduce MTTR from 45 minutes to under 2 minutes.",
-  openGraph: {
-    title: "Incident Commander",
-    description: "Multi-agent DevOps incident response — Elastic Agent Builder Hackathon 2026",
-  },
+    "Multi-agent DevOps incident response dashboard. 4 AI agents orchestrated via A2A protocol to reduce MTTR from 45min to 5min.",
 };
 
 export default function RootLayout({
@@ -21,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} antialiased`}>{children}</body>
+      <body className="bg-gray-950 text-gray-100 antialiased">{children}</body>
     </html>
   );
 }
