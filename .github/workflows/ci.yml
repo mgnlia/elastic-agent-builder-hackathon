@@ -17,9 +17,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras
       - name: Lint
-        run: uv run ruff check src/
+        run: uv run ruff check incident_commander/
       - name: Format check
-        run: uv run ruff format --check src/
+        run: uv run ruff format --check incident_commander/
 
   test:
     runs-on: ubuntu-latest
