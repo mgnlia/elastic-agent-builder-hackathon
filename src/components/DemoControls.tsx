@@ -1,11 +1,10 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { DemoPhase } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Phase } from "@/data/scenario";
 
 interface DemoControlsProps {
-  phase: DemoPhase;
+  phase: Phase;
   isPlaying: boolean;
   speed: number;
   onPlay: () => void;
@@ -14,14 +13,7 @@ interface DemoControlsProps {
   onSetSpeed: (speed: number) => void;
 }
 
-const PHASES: { id: DemoPhase; label: string; icon: string; color: string }[] = [
-  { id: "alert", label: "Alert", icon: "🚨", color: "#FF6C2F" },
-  { id: "triage", label: "Triage", icon: "🔍", color: "#F04E98" },
-  { id: "diagnosis", label: "Diagnosis", icon: "🔬", color: "#0077CC" },
-  { id: "remediation", label: "Remediation", icon: "🔧", color: "#00BFB3" },
-  { id: "communication", label: "Comms", icon: "📢", color: "#FEC514" },
-  { id: "resolved", label: "Resolved", icon: "✅", color: "#00BFB3" },
-];
+const SPEEDS = [1, 2, 5, 10];
 
 export default function DemoControls({
   phase,
@@ -32,153 +24,80 @@ export default function DemoControls({
   onReset,
   onSetSpeed,
 }: DemoControlsProps) {
-  const currentPhaseIdx = PHASES.findIndex((p) => p.id === phase);
-
   return (
-    <div className="bg-surface-1 border border-surface-3 rounded-2xl p-5">
-      {/* Title */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-sm font-semibold text-white tracking-wide uppercase">
-            Demo Scenario
-          </h2>
-          <p className="text-xs text-gray-500 mt-0.5 font-mono">
-            Payment Service CPU Spike
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {[1, 2, 4].map((s) => (
-            <button
-              key={s}
-              onClick={() => onSetSpeed(s)}
-              className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-mono transition-all",
-                speed === s
-                  ? "bg-elastic-teal/20 text-elastic-teal border border-elastic-teal/30"
-                  : "bg-surface-3 text-gray-400 border border-transparent hover:border-surface-4"
-              )}
-            >
-              {s}x
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Phase Progress */}
-      <div className="relative mb-5">
-        {/* Track */}
-        <div className="flex items-center gap-1">
-          {PHASES.map((p, i) => {
-            const isCompleted = i < currentPhaseIdx;
-            const isActive = p.id === phase;
-            const isFuture = i > currentPhaseIdx;
-
-            return (
-              <div key={p.id} className="flex-1 flex items-center">
-                <motion.div
-                  className={cn(
-                    "relative flex items-center justify-center w-full rounded-lg py-2 px-1 transition-all border",
-                    isActive
-                      ? "border-opacity-50 bg-opacity-20"
-                      : isCompleted
-                      ? "border-opacity-30 bg-opacity-10"
-                      : "border-surface-4 bg-surface-2"
-                  )}
-                  style={{
-                    borderColor: isActive || isCompleted ? p.color : undefined,
-                    backgroundColor:
-                      isActive || isCompleted ? `${p.color}15` : undefined,
-                  }}
-                  animate={isActive ? { scale: [1, 1.02, 1] } : {}}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <span className="text-sm mr-1">{p.icon}</span>
-                  <span
-                    className={cn(
-                      "text-[10px] font-mono hidden lg:inline",
-                      isActive
-                        ? "text-white"
-                        : isCompleted
-                        ? "text-gray-300"
-                        : "text-gray-500"
-                    )}
-                  >
-                    {p.label}
-                  </span>
-
-                  {isActive && (
-                    <motion.div
-                      className="absolute inset-0 rounded-lg"
-                      style={{ boxShadow: `0 0 15px ${p.color}20` }}
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                  )}
-                </motion.div>
-
-                {i < PHASES.length - 1 && (
-                  <div
-                    className={cn(
-                      "w-2 h-0.5 flex-shrink-0",
-                      isCompleted ? "bg-gray-500" : "bg-surface-4"
-                    )}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center gap-3">
-        <AnimatePresence mode="wait">
-          {phase === "idle" || phase === "resolved" ? (
-            <motion.button
-              key="start"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              onClick={() => {
-                if (phase === "resolved") {
-                  onReset();
-                  setTimeout(onPlay, 100);
-                } else {
-                  onPlay();
-                }
-              }}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-elastic-teal to-elastic-blue text-white font-semibold text-sm tracking-wide hover:shadow-lg hover:shadow-elastic-teal/20 transition-all"
-            >
-              {phase === "resolved" ? "▶ Replay Demo" : "▶ Start Demo"}
-            </motion.button>
+    <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-surface-1 border border-surface-3">
+      {/* Left: Play controls */}
+      <div className="flex items-center gap-2">
+        {/* Play/Pause */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={isPlaying ? onPause : onPlay}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-xs font-semibold transition-all ${
+            isPlaying
+              ? "bg-surface-3 text-gray-300 hover:bg-surface-4"
+              : "bg-elastic-teal text-surface-0 hover:bg-elastic-teal/90"
+          }`}
+        >
+          {isPlaying ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+              PAUSE
+            </>
           ) : (
-            <motion.div
-              key="controls"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex-1 flex gap-2"
-            >
-              <button
-                onClick={isPlaying ? onPause : onPlay}
-                className={cn(
-                  "flex-1 py-3 rounded-xl font-semibold text-sm tracking-wide transition-all",
-                  isPlaying
-                    ? "bg-elastic-orange/20 text-elastic-orange border border-elastic-orange/30 hover:bg-elastic-orange/30"
-                    : "bg-elastic-teal/20 text-elastic-teal border border-elastic-teal/30 hover:bg-elastic-teal/30"
-                )}
-              >
-                {isPlaying ? "⏸ Pause" : "▶ Resume"}
-              </button>
-              <button
-                onClick={onReset}
-                className="px-4 py-3 rounded-xl bg-surface-3 text-gray-400 text-sm hover:bg-surface-4 transition-all border border-surface-4"
-              >
-                ↺ Reset
-              </button>
-            </motion.div>
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21" />
+              </svg>
+              {phase === "idle" ? "START DEMO" : phase === "resolved" ? "REPLAY" : "RESUME"}
+            </>
           )}
-        </AnimatePresence>
+        </motion.button>
+
+        {/* Reset */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onReset}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-2 text-gray-400 hover:text-gray-200 hover:bg-surface-3 font-mono text-xs transition-all border border-surface-3"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          </svg>
+          RESET
+        </motion.button>
+      </div>
+
+      {/* Center: Scenario label */}
+      <div className="hidden sm:flex items-center gap-2">
+        <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Scenario:</span>
+        <span className="text-xs font-mono text-gray-300 bg-surface-2 px-2.5 py-1 rounded-md border border-surface-3">
+          🔥 Payment Service CPU Spike
+        </span>
+      </div>
+
+      {/* Right: Speed controls */}
+      <div className="flex items-center gap-1.5">
+        <span className="text-[10px] font-mono text-gray-600 mr-1">SPEED</span>
+        {SPEEDS.map((s) => (
+          <motion.button
+            key={s}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onSetSpeed(s)}
+            className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold transition-all ${
+              speed === s
+                ? "bg-elastic-teal/20 text-elastic-teal border border-elastic-teal/40"
+                : "bg-surface-2 text-gray-500 hover:text-gray-300 border border-surface-3"
+            }`}
+          >
+            {s}x
+          </motion.button>
+        ))}
       </div>
     </div>
   );

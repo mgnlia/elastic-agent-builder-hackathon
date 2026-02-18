@@ -1,235 +1,205 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { DemoPhase } from "@/lib/types";
-import { METRICS } from "@/lib/demo-data";
+import { motion, AnimatePresence } from "framer-motion";
+import { Phase, METRICS, AGENTS } from "@/data/scenario";
 
 interface MetricsDashboardProps {
-  phase: DemoPhase;
+  phase: Phase;
   elapsedTime: number;
 }
 
-function MetricBar({
-  label,
-  manual,
-  automated,
-  unit,
-  index,
-  showAutomated,
-}: {
-  label: string;
-  manual: number;
-  automated: number;
-  unit: string;
-  index: number;
-  showAutomated: boolean;
-}) {
-  const reduction = ((manual - automated) / manual) * 100;
-  const manualWidth = 100;
-  const autoWidth = (automated / manual) * 100;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="space-y-2"
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-300 font-medium">{label}</span>
-        {showAutomated && (
-          <motion.span
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-[10px] font-mono text-elastic-teal"
-          >
-            -{reduction.toFixed(1)}%
-          </motion.span>
-        )}
-      </div>
-
-      {/* Manual bar */}
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-gray-500 w-16">Manual</span>
-          <div className="flex-1 h-3 rounded-full bg-surface-3 overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-red-500/60 to-red-400/60"
-              initial={{ width: "0%" }}
-              animate={{ width: `${manualWidth}%` }}
-              transition={{ duration: 0.8, delay: index * 0.1 }}
-            />
-          </div>
-          <span className="text-[10px] font-mono text-gray-400 w-14 text-right">
-            {manual} {unit}
-          </span>
-        </div>
-
-        {/* Automated bar */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-gray-500 w-16">Auto</span>
-          <div className="flex-1 h-3 rounded-full bg-surface-3 overflow-hidden">
-            {showAutomated && (
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-elastic-teal/80 to-elastic-teal/60"
-                initial={{ width: "0%" }}
-                animate={{ width: `${Math.max(autoWidth, 2)}%` }}
-                transition={{ duration: 0.6, delay: index * 0.1 + 0.3 }}
-              />
-            )}
-          </div>
-          <span className="text-[10px] font-mono text-elastic-teal w-14 text-right">
-            {showAutomated
-              ? `${automated < 1 ? (automated * 60).toFixed(0) + "s" : automated.toFixed(1) + " " + unit}`
-              : "—"}
-          </span>
-        </div>
-      </div>
-    </motion.div>
-  );
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}m ${s}s`;
 }
 
-export default function MetricsDashboard({
-  phase,
-  elapsedTime,
-}: MetricsDashboardProps) {
-  const showAutomated = phase === "resolved";
+export default function MetricsDashboard({ phase, elapsedTime }: MetricsDashboardProps) {
+  const isResolved = phase === "resolved";
   const isActive = phase !== "idle";
+  const reductionPercent = isResolved ? METRICS.reduction : isActive ? Math.min(((elapsedTime / METRICS.manual.mttr) * 100), 99) : 0;
 
   return (
-    <div className="bg-surface-1 border border-surface-3 rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-sm font-semibold text-white tracking-wide uppercase">
-          MTTR Metrics
-        </h2>
-        <span className="text-xs font-mono text-gray-500">
-          Mean Time to Resolution
-        </span>
-      </div>
-
-      {/* Hero Metric */}
-      <div className="relative mb-6 p-5 rounded-xl bg-surface-2 border border-surface-4 overflow-hidden">
-        {showAutomated && (
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-elastic-teal/5 to-transparent"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          />
-        )}
-
-        <div className="relative flex items-end justify-between">
-          <div>
-            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-1">
-              {showAutomated ? "Automated MTTR" : "Manual MTTR (Industry Avg)"}
-            </p>
-            <div className="flex items-baseline gap-2">
-              {showAutomated ? (
-                <>
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-4xl font-bold text-elastic-teal font-mono"
-                  >
-                    1:55
-                  </motion.span>
-                  <span className="text-sm text-gray-400">min</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-4xl font-bold text-red-400 font-mono">
-                    45:00
-                  </span>
-                  <span className="text-sm text-gray-400">min</span>
-                </>
-              )}
-            </div>
+    <div className="space-y-4 h-full">
+      {/* MTTR Comparison Card */}
+      <div className="rounded-xl bg-surface-1 border border-surface-3 overflow-hidden">
+        <div className="px-4 py-3 border-b border-surface-3 bg-surface-2/50">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-elastic-yellow animate-pulse" />
+            <h2 className="text-xs font-mono font-semibold text-gray-300 tracking-wider uppercase">
+              MTTR Comparison
+            </h2>
           </div>
-
-          {showAutomated && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-right"
-            >
-              <div className="text-3xl font-bold text-elastic-teal font-mono">
-                95.7%
-              </div>
-              <div className="text-xs text-gray-400">reduction</div>
-            </motion.div>
-          )}
         </div>
 
-        {/* Comparison visualization */}
-        {showAutomated && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-4 flex items-center gap-3"
-          >
-            <div className="flex-1">
-              <div className="h-2 rounded-full bg-red-500/30 w-full" />
-              <span className="text-[9px] font-mono text-gray-500 mt-1 block">
-                45 min manual
+        <div className="p-4 space-y-4">
+          {/* Manual */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Manual Response</span>
+              <span className="text-xs font-mono font-bold text-red-400">{METRICS.manual.label}</span>
+            </div>
+            <div className="h-3 rounded-full bg-surface-3 overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400 w-full" />
+            </div>
+          </div>
+
+          {/* Automated */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">AI Automated</span>
+              <span className="text-xs font-mono font-bold text-elastic-teal">
+                {isActive ? formatTime(elapsedTime) : "—"}
               </span>
             </div>
-            <span className="text-gray-600 text-xs">→</span>
-            <div className="w-[4.3%] min-w-[12px]">
-              <div className="h-2 rounded-full bg-elastic-teal" />
-              <span className="text-[9px] font-mono text-elastic-teal mt-1 block whitespace-nowrap">
-                1m 55s
-              </span>
+            <div className="h-3 rounded-full bg-surface-3 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-elastic-teal to-emerald-400"
+                initial={{ width: "0%" }}
+                animate={{ width: isActive ? `${Math.min((elapsedTime / METRICS.manual.mttr) * 100, 100)}%` : "0%" }}
+                transition={{ duration: 0.3 }}
+              />
             </div>
-          </motion.div>
-        )}
-      </div>
+          </div>
 
-      {/* Breakdown */}
-      <div className="space-y-4">
-        {METRICS.map((metric, i) => (
-          <MetricBar
-            key={metric.label}
-            label={metric.label}
-            manual={metric.manual}
-            automated={metric.automated}
-            unit={metric.unit}
-            index={i}
-            showAutomated={showAutomated}
-          />
-        ))}
-      </div>
-
-      {/* Agent Summary */}
-      {isActive && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-5 pt-4 border-t border-surface-4"
-        >
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { icon: "🔍", label: "Triage", time: "14s", color: "#F04E98" },
-              { icon: "🔬", label: "Diagnosis", time: "30s", color: "#0077CC" },
-              { icon: "🔧", label: "Remediation", time: "30s", color: "#00BFB3" },
-              { icon: "📢", label: "Comms", time: "20s", color: "#FEC514" },
-            ].map((agent) => (
-              <div
-                key={agent.label}
-                className="text-center p-2 rounded-lg bg-surface-2"
+          {/* Reduction badge */}
+          <AnimatePresence>
+            {isResolved && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, type: "spring" }}
+                className="flex items-center justify-center p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30"
               >
-                <span className="text-lg">{agent.icon}</span>
-                <div
-                  className="text-[10px] font-mono mt-1"
-                  style={{ color: agent.color }}
-                >
-                  {agent.time}
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-emerald-400 font-mono">
+                    {METRICS.reduction}%
+                  </div>
+                  <div className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-wider">
+                    MTTR Reduction
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Agent Performance Card */}
+      <div className="rounded-xl bg-surface-1 border border-surface-3 overflow-hidden">
+        <div className="px-4 py-3 border-b border-surface-3 bg-surface-2/50">
+          <h2 className="text-xs font-mono font-semibold text-gray-300 tracking-wider uppercase">
+            Agent Performance
+          </h2>
+        </div>
+        <div className="p-3 space-y-2">
+          {AGENTS.map((agent) => {
+            const agentPhases: Record<string, Phase> = {
+              triage: "triage",
+              diagnosis: "diagnosis",
+              remediation: "remediation",
+              communication: "communication",
+            };
+            const agentPhase = agentPhases[agent.id];
+            const phaseOrder = ["idle", "alert", "triage", "diagnosis", "remediation", "communication", "resolved"];
+            const currentIdx = phaseOrder.indexOf(phase);
+            const agentIdx = phaseOrder.indexOf(agentPhase);
+            const isDone = currentIdx > agentIdx;
+            const isRunning = phase === agentPhase;
+
+            return (
+              <div
+                key={agent.id}
+                className={`flex items-center justify-between p-2 rounded-lg border transition-all duration-300 ${
+                  isRunning
+                    ? `${agent.bgColor} ${agent.borderColor}`
+                    : isDone
+                    ? "bg-surface-2/30 border-surface-3/50"
+                    : "bg-surface-2/20 border-surface-3/30"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{agent.icon}</span>
+                  <div>
+                    <span className={`text-[11px] font-mono font-semibold ${isRunning ? agent.color : isDone ? "text-gray-400" : "text-gray-600"}`}>
+                      {agent.name}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-mono ${isDone ? "text-gray-500" : "text-gray-600"}`}>
+                    {agent.duration}s
+                  </span>
+                  {isDone ? (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-emerald-400">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </motion.div>
+                  ) : isRunning ? (
+                    <motion.div
+                      className={`w-4 h-4 rounded-full ${agent.dotColor}/30 flex items-center justify-center`}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${agent.dotColor}`} />
+                    </motion.div>
+                  ) : (
+                    <div className="w-4 h-4 rounded-full bg-surface-4/50" />
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="rounded-xl bg-surface-1 border border-surface-3 overflow-hidden">
+        <div className="px-4 py-3 border-b border-surface-3 bg-surface-2/50">
+          <h2 className="text-xs font-mono font-semibold text-gray-300 tracking-wider uppercase">
+            Incident Stats
+          </h2>
+        </div>
+        <div className="p-3 grid grid-cols-2 gap-2">
+          {[
+            { label: "Severity", value: isActive ? "P1 — Critical" : "—", color: isActive ? "text-red-400" : "text-gray-600" },
+            { label: "Errors", value: isActive ? "1,247" : "—", color: isActive ? "text-elastic-pink" : "text-gray-600" },
+            { label: "Hosts", value: isActive ? "3" : "—", color: isActive ? "text-elastic-orange" : "text-gray-600" },
+            { label: "Root Cause", value: phase === "diagnosis" || phase === "remediation" || phase === "communication" || phase === "resolved" ? "v2.14.0" : "—", color: "text-elastic-blue" },
+          ].map((stat) => (
+            <div key={stat.label} className="p-2 rounded-lg bg-surface-2/30 border border-surface-3/30">
+              <div className="text-[9px] font-mono text-gray-600 uppercase tracking-wider">
+                {stat.label}
+              </div>
+              <div className={`text-xs font-mono font-bold mt-0.5 ${stat.color}`}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tech Stack Badge */}
+      <div className="rounded-xl bg-surface-1 border border-surface-3 p-3">
+        <div className="text-[9px] font-mono text-gray-600 uppercase tracking-wider mb-2">
+          Architecture
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {["Elastic Agent Builder", "A2A Protocol", "ES|QL", "Elasticsearch", "CloudWatch", "Next.js 14"].map((tech) => (
+            <span
+              key={tech}
+              className="text-[9px] font-mono text-gray-500 bg-surface-3/50 px-2 py-0.5 rounded-md border border-surface-4/50"
+            >
+              {tech}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
