@@ -1,35 +1,38 @@
-"""Tests for the AgentBuilderClient (unit-level, no live Elastic needed)."""
+"""Tests for the Elastic Agent Builder API client."""
 
-from __future__ import annotations
-
-from unittest.mock import MagicMock, patch
-
-import pytest
-
-from src.config import Settings
-from src.elastic_client import AgentBuilderClient
+from incident_commander.config import Settings
+from incident_commander.elastic_client import AgentBuilderClient
 
 
-@pytest.fixture
-def mock_settings() -> Settings:
-    return Settings(
-        elasticsearch_url="https://test.es.example.com:443",
-        elastic_api_key="fake-key",
-    )  # type: ignore[call-arg]
+def test_client_instantiates_with_defaults():
+    """Client should instantiate without errors using default settings."""
+    client = AgentBuilderClient()
+    assert client.cfg is not None
 
 
-@pytest.fixture
-def client(mock_settings: Settings) -> AgentBuilderClient:
-    return AgentBuilderClient(mock_settings)
+def test_client_instantiates_with_custom_settings():
+    """Client should accept custom Settings."""
+    cfg = Settings(
+        kibana_url="https://test.kb.example.com",
+        kibana_api_key="test-key-123",
+    )
+    client = AgentBuilderClient(cfg=cfg)
+    assert client.cfg.kibana_url == "https://test.kb.example.com"
+    assert client.cfg.kibana_api_key == "test-key-123"
 
 
-def test_a2a_url(client: AgentBuilderClient):
-    assert client.a2a_url.endswith("/api/agent_builder/a2a")
+def test_client_base_url():
+    """Base URL should be derived from kibana_url."""
+    cfg = Settings(kibana_url="https://test.kb.example.com")
+    client = AgentBuilderClient(cfg=cfg)
+    assert "test.kb.example.com" in str(client._http.base_url)
+    assert "agent_builder" in str(client._http.base_url)
 
 
-def test_mcp_url(client: AgentBuilderClient):
-    assert client.mcp_url.endswith("/api/agent_builder/mcp")
-
-
-def test_kibana_url_derived(client: AgentBuilderClient):
-    assert ".kb." in client.kibana_url
+def test_client_headers():
+    """Client should include required Kibana headers."""
+    cfg = Settings(kibana_api_key="test-key-456")
+    client = AgentBuilderClient(cfg=cfg)
+    headers = dict(client._http.headers)
+    assert "kbn-xsrf" in headers
+    assert "content-type" in headers

@@ -1,2 +1,3 @@
-# DEPRECATED — this package is superseded by incident_commander/
-# Kept as empty stub. See incident_commander/ for the canonical codebase.
+"""Elastic Agent Builder Hackathon — multi-step AI agent submission."""
+
+__version__ = "0.1.0"

@@ -4,21 +4,17 @@ from __future__ import annotations
 
 import httpx
 
-from incident_commander.config import ElasticConfig, config as default_config
+from incident_commander.config import Settings, settings as default_settings
 
 
 class AgentBuilderClient:
     """Client for Elastic Agent Builder Kibana APIs."""
 
-    def __init__(self, cfg: ElasticConfig | None = None) -> None:
-        self.cfg = cfg or default_config
+    def __init__(self, cfg: Settings | None = None) -> None:
+        self.cfg = cfg or default_settings
         self._http = httpx.AsyncClient(
             base_url=self.cfg.agent_builder_base_url,
-            headers={
-                "Authorization": f"ApiKey {self.cfg.kibana_api_key}",
-                "kbn-xsrf": "true",
-                "Content-Type": "application/json",
-            },
+            headers=self.cfg.kibana_headers,
             timeout=30.0,
         )
 

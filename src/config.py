@@ -1,3 +1,3 @@
-# DEPRECATED — this file is superseded by incident_commander/config.py
-# Kept as empty stub to avoid import errors from any stale references.
-# See incident_commander/ for the canonical codebase.
+# DEPRECATED — removed. Use incident_commander.config instead.
+# This file exists only as a tombstone to prevent stale imports.
+raise ImportError("src.config is removed. Use: from incident_commander.config import settings")
