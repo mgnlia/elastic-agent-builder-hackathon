@@ -2,57 +2,69 @@
 
 from incident_commander.tools import (
     ALL_TOOLS,
-    ToolDefinition,
+    CUSTOM_TOOLS,
+    ESQL_TOOLS,
+    get_all_tool_definitions,
 )
 
 
-VALID_TOOL_TYPES = {"esql", "index_search", "workflow", "custom"}
+VALID_TOOL_TYPES = {"esql", "custom"}
 
 
 def test_all_tools_count():
-    assert len(ALL_TOOLS) == 9
+    """12 tools total: 8 ES|QL + 4 custom."""
+    assert len(ALL_TOOLS) == 12
 
 
-def test_all_tools_are_definitions():
+def test_esql_tools_count():
+    assert len(ESQL_TOOLS) == 8
+
+
+def test_custom_tools_count():
+    assert len(CUSTOM_TOOLS) == 4
+
+
+def test_all_tools_are_dicts():
     for tool in ALL_TOOLS:
-        assert isinstance(tool, ToolDefinition)
+        assert isinstance(tool, dict)
 
 
-def test_tool_names_unique():
-    names = [t.name for t in ALL_TOOLS]
-    assert len(names) == len(set(names))
+def test_tool_ids_unique():
+    ids = [t["toolId"] for t in ALL_TOOLS]
+    assert len(ids) == len(set(ids))
 
 
 def test_tool_types_valid():
     for tool in ALL_TOOLS:
-        assert tool.tool_type in VALID_TOOL_TYPES, f"{tool.name} has invalid type {tool.tool_type}"
+        assert tool["type"] in VALID_TOOL_TYPES, f"{tool['toolId']} has invalid type {tool['type']}"
 
 
 def test_esql_tools_have_query():
-    esql_tools = [t for t in ALL_TOOLS if t.tool_type == "esql"]
-    assert len(esql_tools) == 3
-    for tool in esql_tools:
-        assert "query" in tool.config
-        assert len(tool.config["query"]) > 10
+    for tool in ESQL_TOOLS:
+        assert tool["type"] == "esql"
+        assert "esqlQuery" in tool["configuration"]
+        assert len(tool["configuration"]["esqlQuery"]) > 10
 
 
-def test_search_tools_have_index():
-    search_tools = [t for t in ALL_TOOLS if t.tool_type == "index_search"]
-    assert len(search_tools) == 3
-    for tool in search_tools:
-        assert "index" in tool.config
-        assert "fields" in tool.config
-
-
-def test_workflow_tools_have_workflow_id():
-    wf_tools = [t for t in ALL_TOOLS if t.tool_type == "workflow"]
-    assert len(wf_tools) == 3
-    for tool in wf_tools:
-        assert "workflow_id" in tool.config
-        assert "params" in tool.config
+def test_custom_tools_have_url():
+    for tool in CUSTOM_TOOLS:
+        assert tool["type"] == "custom"
+        assert "url" in tool["configuration"]
+        assert "method" in tool["configuration"]
 
 
 def test_all_tools_have_descriptions():
     for tool in ALL_TOOLS:
-        assert tool.description
-        assert len(tool.description) > 10
+        assert tool["description"]
+        assert len(tool["description"]) > 10
+
+
+def test_all_tool_ids_namespaced():
+    for tool in ALL_TOOLS:
+        assert tool["toolId"].startswith("incident_cmd.")
+
+
+def test_get_all_tool_definitions_returns_copy():
+    defs = get_all_tool_definitions()
+    assert len(defs) == 12
+    assert defs is not ALL_TOOLS  # should be a copy
