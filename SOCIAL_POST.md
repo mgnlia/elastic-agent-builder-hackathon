@@ -24,7 +24,7 @@ Built with:
 • A2A protocol orchestration
 • Next.js live dashboard
 
-Live demo: [VERCEL_URL]
+Live demo: https://elastic-agent-builder-hackathon.vercel.app
 Code: github.com/mgnlia/elastic-agent-builder-hackathon
 
 #ElasticAgentBuilder #DevOps #AI #Hackathon @elastic_devs
@@ -81,7 +81,7 @@ The result:
 • 79% of response steps automated
 • Zero human context switches needed
 
-Live dashboard: [VERCEL_URL]
+Live dashboard: https://elastic-agent-builder-hackathon.vercel.app
 Code: github.com/mgnlia/elastic-agent-builder-hackathon
 
 @elastic_devs #ElasticAgentBuilder
@@ -109,7 +109,7 @@ Key results:
 Built with Elastic Cloud Serverless, Agent Builder, ES|QL, and a Next.js dashboard for real-time visualization.
 
 Check out the live demo and code:
-🔗 [VERCEL_URL]
+🔗 https://elastic-agent-builder-hackathon.vercel.app
 💻 github.com/mgnlia/elastic-agent-builder-hackathon
 
 #Elasticsearch #AgentBuilder #DevOps #AI #Hackathon
