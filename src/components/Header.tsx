@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Phase } from "@/data/scenario";
+import { Phase, DEMO_TOTAL_SECONDS } from "@/data/scenario";
 
 interface HeaderProps {
   phase: Phase;
@@ -110,13 +110,13 @@ export default function Header({ phase, elapsedTime }: HeaderProps) {
         </div>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar — driven by DEMO_TOTAL_SECONDS, single source of truth */}
       {phase !== "idle" && (
         <div className="h-[2px] bg-surface-3">
           <motion.div
             className="h-full bg-gradient-to-r from-accent-triage via-accent-diagnosis via-accent-remediation to-accent-communication"
             initial={{ width: "0%" }}
-            animate={{ width: `${Math.min((elapsedTime / 115) * 100, 100)}%` }}
+            animate={{ width: `${Math.min((elapsedTime / DEMO_TOTAL_SECONDS) * 100, 100)}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
