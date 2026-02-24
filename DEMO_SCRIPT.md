@@ -2,7 +2,7 @@
 
 **Target Length:** 3 minutes
 **Format:** Screen recording of dashboard + voiceover narration
-**Tool:** Record dashboard at https://[vercel-url] with demo mode
+**Tool:** Record dashboard at https://elastic-agent-builder-hackathon.vercel.app with demo mode
 
 ---
 
@@ -88,9 +88,10 @@
 
 ## Recording Tips
 
-1. **Use 2x speed** during the demo to keep pacing tight (the demo has 19 steps)
-2. **Pause at A2A handoffs** — these are the most impressive moments
-3. **Highlight tool badges** — judges score on ES|QL and tool usage
-4. **Show the metrics panel last** — the 91% MTTR reduction is the emotional climax
-5. **Resolution:** 1920×1080, clean browser (no bookmarks bar)
-6. **Audio:** Clear voiceover, no background music needed
+1. **URL to record:** https://elastic-agent-builder-hackathon.vercel.app
+2. **Use 2x speed** during the demo to keep pacing tight (the demo has 19 steps)
+3. **Pause at A2A handoffs** — these are the most impressive moments
+4. **Highlight tool badges** — judges score on ES|QL and tool usage
+5. **Show the metrics panel last** — the 91% MTTR reduction is the emotional climax
+6. **Resolution:** 1920×1080, clean browser (no bookmarks bar)
+7. **Audio:** Clear voiceover, no background music needed
