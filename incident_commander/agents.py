@@ -11,7 +11,6 @@ Each agent is defined as a dict matching the Elastic Agent Builder API schema.
 
 from __future__ import annotations
 
-
 TRIAGE_AGENT: dict = {
     "agentId": "incident_cmd_triage",
     "displayName": "Triage Agent",
@@ -21,7 +20,7 @@ TRIAGE_AGENT: dict = {
     "instructions": (
         "You are the Triage Agent for the Incident Commander system. "
         "When you receive an alert or incident notification, you must: "
-        "1) Classify severity (P1-Critical, P2-High, P3-Medium, P4-Low) based on impact and urgency. "
+        "1) Classify severity (P1-Critical, P2-High, P3-Medium, P4-Low) based on impact. "
         "2) Identify affected services using the service catalog search tool. "
         "3) Check for recent similar alerts to avoid duplicate investigations. "
         "4) Route to the Diagnosis Agent with a structured triage summary. "
@@ -75,7 +74,7 @@ REMEDIATION_AGENT: dict = {
         "2) Execute the action using the available custom tools. "
         "3) Verify the fix by checking post-action metrics. "
         "4) Report results to the Communication Agent. "
-        "Always explain what action you took and why. Prioritize safety — prefer rollback over restart."
+        "Always explain what action you took and why. Prefer rollback over restart for safety."
     ),
     "tools": [
         "incident_cmd.restart_service",
