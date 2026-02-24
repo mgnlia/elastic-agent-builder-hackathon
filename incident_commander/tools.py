@@ -13,7 +13,7 @@ from __future__ import annotations
 ESQL_ERROR_RATE_SPIKE: dict = {
     "toolId": "incident_cmd.error_rate_spike",
     "displayName": "Error Rate Spike",
-    "description": "Detect error-rate spikes across services in the last 30 minutes using ES|QL.",
+    "description": "Detect error-rate spikes across services in the last 30 minutes via ES|QL.",
     "type": "esql",
     "configuration": {
         "esqlQuery": (
@@ -46,7 +46,7 @@ ESQL_CPU_ANOMALY: dict = {
 ESQL_LOG_CORRELATION: dict = {
     "toolId": "incident_cmd.log_correlation",
     "displayName": "Log Correlation",
-    "description": "Correlate error and critical logs by service and error type in the last 30 minutes.",
+    "description": "Correlate error and critical logs by service and error type (last 30 min).",
     "type": "esql",
     "configuration": {
         "esqlQuery": (
@@ -158,7 +158,7 @@ ESQL_TOOLS: list[dict] = [
 CUSTOM_RESTART_SERVICE: dict = {
     "toolId": "incident_cmd.restart_service",
     "displayName": "Restart Service",
-    "description": "Trigger a rolling restart for a specified service to recover from transient failures.",
+    "description": "Trigger a rolling restart for a service to recover from transient failures.",
     "type": "custom",
     "configuration": {
         "url": "{{KIBANA_URL}}/api/fleet/agents/actions",
@@ -227,7 +227,7 @@ CUSTOM_TOOLS: list[dict] = [
 SEARCH_SERVICE_CATALOG: dict = {
     "toolId": "incident_cmd.search_service_catalog",
     "displayName": "Search Service Catalog",
-    "description": "Search the service catalog to identify service owners, dependencies, and runbooks.",
+    "description": "Search the service catalog for service owners, dependencies, and runbooks.",
     "type": "esql",
     "configuration": {
         "esqlQuery": (
