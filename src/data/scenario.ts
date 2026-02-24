@@ -36,6 +36,10 @@ export interface AgentInfo {
   duration: number;      // seconds
 }
 
+// Single source of truth for demo duration
+// Matches the last timeline event timestamp (01:55 = 115s)
+export const DEMO_TOTAL_SECONDS = 115;
+
 export const AGENTS: AgentInfo[] = [
   {
     id: "triage",
@@ -388,7 +392,7 @@ export const METRICS = {
     ],
   },
   automated: {
-    mttr: 115,            // 1m 55s
+    mttr: DEMO_TOTAL_SECONDS,  // 1m 55s — single source of truth
     label: "1m 55s",
     steps: [
       { name: "Alert Ingestion", duration: "2s" },
