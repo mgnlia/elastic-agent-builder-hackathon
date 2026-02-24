@@ -1,8 +1,8 @@
 # 🛡️ Elastic Incident Commander
 
-**Multi-agent DevOps incident response system built for the [Elasticsearch Agent Builder Hackathon](https://elastic-agent-builder-hackathon.devpost.com/).**
+**Multi-agent DevOps incident response system built for the [Elasticsearch Agent Builder Hackathon](https://elasticsearch.devpost.com/).**
 
-Reduces Mean Time To Resolution (MTTR) from 45 minutes to under 5 minutes using four specialized AI agents orchestrated via Elastic's A2A (Agent-to-Agent) protocol.
+Reduces Mean Time To Resolution (MTTR) from 45 minutes to under 2 minutes using four specialized AI agents orchestrated via Elastic's A2A (Agent-to-Agent) protocol.
 
 ---
 
@@ -53,8 +53,8 @@ Each agent handoff is a structured A2A message containing findings, confidence l
 | Triage → Diagnosis | 15 min | ~30 sec |
 | Diagnosis → Fix | 18 min | ~30 sec |
 | Fix → Communication | 4 min | ~20 sec |
-| **Total MTTR** | **45 min** | **~4 min 12 sec** |
-| **Reduction** | — | **91%** |
+| **Total MTTR** | **45 min** | **1 min 55 sec** |
+| **Reduction** | — | **95.7%** |
 
 ---
 
@@ -75,7 +75,6 @@ Each agent handoff is a structured A2A message containing findings, confidence l
 ### Frontend
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
@@ -85,7 +84,6 @@ Open [http://localhost:3000](http://localhost:3000)
 ### Backend
 
 ```bash
-cd backend
 uv sync
 uv run incident-commander --help
 ```
