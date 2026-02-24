@@ -40,6 +40,6 @@ In our demo scenario (payment-service memory leak after a bad deploy), Incident 
 
 **Tech Stack:** Elastic Cloud Serverless · Agent Builder · ES|QL (8 queries) · Custom Tools (4 actions) · A2A Protocol · Python + uv · Next.js Dashboard
 
-**Live Dashboard:** [See deployment URL]
+**Live Dashboard:** https://elastic-agent-builder-hackathon.vercel.app
 
 **Repository:** https://github.com/mgnlia/elastic-agent-builder-hackathon
