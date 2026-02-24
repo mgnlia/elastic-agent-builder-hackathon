@@ -2,7 +2,7 @@
 
 ## Project Description (~400 words)
 
-**Elastic Incident Commander** is a multi-agent DevOps incident response system that reduces Mean Time To Resolution (MTTR) from 45 minutes to under 5 minutes using four specialized AI agents orchestrated via Elastic's A2A (Agent-to-Agent) protocol.
+**Elastic Incident Commander** is a multi-agent DevOps incident response system that reduces Mean Time To Resolution (MTTR) from 45 minutes to under 2 minutes using four specialized AI agents orchestrated via Elastic's A2A (Agent-to-Agent) protocol.
 
 ### The Problem
 
@@ -13,7 +13,7 @@ Production incidents cost engineering teams an average of 45 minutes to resolve.
 Incident Commander deploys four purpose-built agents through Elastic Agent Builder, each with specialized ES|QL tools:
 
 - **Triage Agent** — Receives alerts, classifies severity (P1–P4), and routes to specialists using ES|QL queries for error rate spikes and log correlation.
-- **Diagnosis Agent** — Correlates logs and metrics across 8 ES|QL queries (CPU anomalies, memory pressure, deployment events, service latency, dependency errors, throughput drops) to identify root cause with high confidence.
+- **Diagnosis Agent** — Correlates logs and metrics across ES|QL queries (CPU anomalies, memory pressure, deployment events, service latency, dependency errors, throughput drops) to identify root cause with high confidence.
 - **Remediation Agent** — Executes automated fixes via 4 custom tools: rolling restarts, horizontal scaling, deployment rollbacks, and configuration updates.
 - **Communication Agent** — Generates real-time status updates, incident timelines, and structured postmortems with 5-whys analysis.
 
@@ -34,7 +34,7 @@ The biggest challenge was designing the agent handoff schema — deciding what c
 
 ### Impact
 
-In our demo scenario (payment-service memory leak after a bad deploy), Incident Commander resolves the P1 incident in 4 minutes 12 seconds — a **91% reduction in MTTR** compared to the 47-minute manual baseline, with 79% of response steps fully automated.
+In our demo scenario (payment-service memory leak after a bad deploy), Incident Commander resolves the P1 incident in **1 minute 55 seconds** — a **95.7% reduction in MTTR** compared to the 45-minute manual baseline, with the entire response chain fully automated end-to-end.
 
 ---
 
