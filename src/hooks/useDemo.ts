@@ -7,6 +7,7 @@ import {
   PHASE_ORDER,
   TIMELINE_EVENTS,
   AGENT_MESSAGES,
+  DEMO_TOTAL_SECONDS,
   TimelineEvent,
   AgentMessage,
 } from "@/data/scenario";
@@ -30,9 +31,9 @@ function parseTimestamp(ts: string): number {
 function getPhaseForTime(elapsed: number): Phase {
   if (elapsed < 0) return "idle";
   if (elapsed < 2) return "alert";
-  if (elapsed < 16) return "triage";       // 2 + 14
-  if (elapsed < 46) return "diagnosis";    // 16 + 30
-  if (elapsed < 76) return "remediation";  // 46 + 30
+  if (elapsed < 16) return "triage";        // 2 + 14
+  if (elapsed < 46) return "diagnosis";     // 16 + 30
+  if (elapsed < 76) return "remediation";   // 46 + 30
   if (elapsed < 96) return "communication"; // 76 + 20
   return "resolved";
 }
@@ -46,8 +47,6 @@ function getActiveAgent(phase: Phase): AgentId | null {
     default: return null;
   }
 }
-
-const TOTAL_DURATION = 120; // 2 minutes total demo
 
 export function useDemo() {
   const [state, setState] = useState<DemoState>({
@@ -73,9 +72,9 @@ export function useDemo() {
     elapsedRef.current += 0.1 * speedRef.current;
     const elapsed = elapsedRef.current;
 
-    if (elapsed >= TOTAL_DURATION) {
-      // Demo complete
-      elapsedRef.current = TOTAL_DURATION;
+    if (elapsed >= DEMO_TOTAL_SECONDS) {
+      // Demo complete — snap to exact end time
+      elapsedRef.current = DEMO_TOTAL_SECONDS;
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -84,7 +83,7 @@ export function useDemo() {
         ...prev,
         phase: "resolved",
         isPlaying: false,
-        elapsedTime: TOTAL_DURATION,
+        elapsedTime: DEMO_TOTAL_SECONDS,
         events: TIMELINE_EVENTS,
         messages: AGENT_MESSAGES,
         activeAgent: null,
@@ -117,7 +116,7 @@ export function useDemo() {
     if (intervalRef.current) return;
 
     // If at end, reset first
-    if (elapsedRef.current >= TOTAL_DURATION) {
+    if (elapsedRef.current >= DEMO_TOTAL_SECONDS) {
       elapsedRef.current = 0;
     }
 
